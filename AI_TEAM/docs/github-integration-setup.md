@@ -140,11 +140,13 @@
 ### Branch Protection / Rulesets
 
 - `main` 직접 푸시 금지
-- required pull request reviews 활성화
-- code owner review 활성화
 - required status checks 활성화
-- stale approvals 무효화 활성화
-- latest push 재승인 요구 활성화 권장
+- solo 모드면 required approving reviews = `0`
+- solo 모드면 code owner review = `off`
+- solo 모드면 Copilot code review ruleset 활성화
+- 팀 모드로 확장할 때 required pull request reviews 활성화
+- 팀 모드로 확장할 때 stale approvals 무효화 활성화
+- 팀 모드로 확장할 때 latest push 재승인 요구 활성화 권장
 
 ### Actions 설정
 

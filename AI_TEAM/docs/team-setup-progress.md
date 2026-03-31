@@ -8,8 +8,8 @@
 
 ## 전체 상태
 
-- 현재 상태: `기반 구조 정리 완료, GitHub 보호 규칙 적용 완료, 테스트 PR 검증 완료`
-- 체감 진행률: `약 90%`
+- 현재 상태: `1인 개발용 GitHub 규칙 전환 완료, Copilot AI reviewer 적용 진행 중`
+- 체감 진행률: `약 97%`
 
 ## 완료된 항목
 
@@ -54,19 +54,57 @@
 - GitHub Actions 자동 승인 리뷰 확인 완료
 - PR 상태 확인 완료
 - PR `#1` 머지 완료
+- `required status checks = validate` 강제 완료
+- `require_code_owner_reviews = true` 적용 완료
+- `enforce_admins = true` 적용 완료
+- 엄격 규칙 검증용 PR `#2` 생성 완료
+- PR `#2`는 승인 전 `BLOCKED` 상태임을 확인
+- `validate` 상태 체크 성공 후에도 self-approval 불가로 인해 머지 불가 상태임을 확인
+- 엄격 규칙 검증 결과를 바탕으로 1인 개발용 보호 규칙 재설계 완료
+- `required_approving_review_count = 0` 재구성 완료
+- `require_code_owner_reviews = false` 재구성 완료
+- `solo-ai-review` Copilot ruleset 생성 완료
+- `.github/copilot-instructions.md` 추가 완료
+- `.github/agents/solo-reviewer.agent.md` 추가 완료
+- `.github/agents/review-intake.agent.md` 추가 완료
+- `.github/agents/fix-review-comments.agent.md` 추가 완료
+- `.github/workflows/review-intake.yml` 추가 완료
+- `.github/workflows/request-ai-fix.yml` 추가 완료
+- `.github/workflows/safe-auto-merge.yml` 추가 완료
+- `scripts/pr_review_automation.py` 추가 완료
+- AI review loop 문서 추가 완료
 
 ## 부분 완료 항목
 
 ### GitHub MCP 런타임 검증
 
 - 설정 등록은 완료되었다.
-- 다만 현재 세션에서 GitHub MCP 도구 호출 자체를 직접 사용해 PR 작업을 검증한 상태는 아니다.
-- Codex CLI 설정상으로는 활성화되어 있으며, 다음 Codex 세션 또는 MCP 재로딩 이후 실제 사용 검증이 필요하다.
+- 현재 세션에서 GitHub MCP로 PR `#2` 조회를 직접 검증했다.
+- 현재 세션에서 GitHub MCP로 PR `#2` `COMMENT` 리뷰 제출을 직접 검증했다.
+- 현재 세션에서 GitHub MCP로 PR `#2` `APPROVE` 시도 시 GitHub API `422` 응답을 직접 확인했다.
+- 즉, MCP 경로는 정상 동작하며 현재 blocker는 MCP 미동작이 아니라 self-approval 제한이다.
+- 현재 세션에 노출된 GitHub MCP 액션에는 direct merge 호출이 없으므로, 최종 머지는 `gh` 또는 GitHub UI, 혹은 `enable_auto_merge` 경로로 검증해야 한다.
+
+### 1인 개발 리뷰 모드
+
+- 현재 `main` 브랜치는 PR 기반 흐름과 `validate` 체크를 유지한다.
+- 사람 approval count와 code owner approval은 강제하지 않는다.
+- 대신 Copilot AI review ruleset과 self-review 기록을 기본 리뷰 게이트로 사용한다.
+- 최종 머지는 저장소 owner가 AI 리뷰 결과를 확인한 뒤 수행한다.
+
+### AI Review Loop 자동화
+
+- Copilot review를 task로 바꾸는 `review-intake` 에이전트와 워크플로가 추가되었다.
+- actionable task를 다시 Copilot 수정 요청으로 넘기는 `fix-review-comments` 에이전트와 `/ai-fix-review` 트리거가 추가되었다.
+- low-risk PR에 한해 `safe-auto-merge` 라벨 기반 자동 머지 워크플로가 추가되었다.
+- 다만 Copilot coding agent가 푸시한 뒤에는 GitHub Actions 재실행 승인 과정이 필요할 수 있다.
 
 ### CODEOWNERS 실사용화
 
 - 저장소 루트 `.github/CODEOWNERS`에는 실제 사용자 `@oyj7677`가 반영되었다.
 - `AI_TEAM/.github/CODEOWNERS`는 참고용 초안으로 남아 있다.
+- 현재 solo 모드에서는 ownership map 용도로 유지한다.
+- 이후 multi-reviewer 체제로 전환하면 collaborator 또는 organization team 기준으로 다시 확장한다.
 
 ### PR / 리뷰 규칙 강제
 
@@ -82,22 +120,24 @@
 
 ## 남은 핵심 작업
 
-1. `required status checks`를 branch protection에 연결할지 결정
-2. `require_code_owner_reviews`를 실제로 켤지 결정
-3. 팀 역할별 GitHub 계정 또는 승인 전략 확정
-4. GitHub MCP를 사용한 실제 PR 작업도 별도로 검증
+1. `review-intake`와 `safe-auto-merge`를 `main` 머지 후 실환경에서 검증
+2. `/ai-fix-review` 코멘트로 Copilot coding agent 실제 반응 확인
+3. Copilot 푸시 후 workflow 승인 절차를 운영 루틴에 반영
+4. multi-reviewer 체제로 확장할 시 CODEOWNERS와 review 규칙 재강화
 
 ## 권장 다음 단계
 
 ### 바로 다음
 
-- `required status checks` 강제 여부 결정
-- `code owner review` 강제 여부 결정
+- `review-intake` dry run으로 현재 PR 상태 점검
+- Copilot이 남긴 workflow 보안 코멘트 반영
+- `main` 머지 후 `/ai-fix-review`와 `safe-auto-merge` 실동작 검증
 
 ### 그 다음
 
-- `Codex GitHub MCP`로도 PR 조회/리뷰/머지 동작 검증
-- 필요하면 리뷰용 봇 계정 또는 GitHub App 분리
+- `Codex GitHub MCP`로 PR 조회와 리뷰 쓰기 검증 결과를 운영 문서에 반영 유지
+- 필요 시 auto-merge 전략 또는 release agent 경로 추가
+- 팀 확장 시 required reviews / code owner review 재적용
 
 ### 이후
 

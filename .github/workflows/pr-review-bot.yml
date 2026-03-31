@@ -1,20 +1,23 @@
-name: pr-review-bot
+# Legacy helper kept for historical strict-rule validation experiments.
+# This workflow is disabled by default because pull_request_target + write access
+# is not appropriate for the normal solo review loop.
+name: legacy-pr-review-bot
 
 on:
-  pull_request_target:
-    types:
-      - opened
-      - synchronize
-      - reopened
+  workflow_dispatch:
 
 jobs:
   approve-test-pr:
-    if: startsWith(github.event.pull_request.head.ref, 'codex/test-pr-flow')
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
     steps:
+      - name: Refuse automatic execution
+        run: |
+          echo "This legacy workflow is workflow_dispatch-only."
+          echo "Use it only for explicit historical validation."
       - name: Approve test PR
+        if: false
         run: |
           gh api \
             --method POST \

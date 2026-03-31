@@ -14,6 +14,18 @@ jobs:
       - name: Verify required repo files
         run: |
           test -f .github/CODEOWNERS
+          test -f .github/agents/review-intake.agent.md
+          test -f .github/agents/fix-review-comments.agent.md
+          test -f .github/copilot-instructions.md
+          test -f .github/agents/solo-reviewer.agent.md
           test -f .github/pull_request_template.md
+          test -f .github/workflows/review-intake.yml
+          test -f .github/workflows/request-ai-fix.yml
+          test -f .github/workflows/safe-auto-merge.yml
           test -f AI_TEAM/00_HOME/AI_TEAM_HOME.md
           test -f AI_TEAM/docs/ai-team-github-pr-policy.md
+          test -f AI_TEAM/docs/ai-review-automation.md
+          test -f scripts/pr_review_automation.py
+      - name: Validate review automation script syntax
+        run: |
+          python3 -m py_compile scripts/pr_review_automation.py

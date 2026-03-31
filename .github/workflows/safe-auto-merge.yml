@@ -1,0 +1,80 @@
+name: safe-auto-merge
+
+on:
+  pull_request_target:
+    types:
+      - labeled
+      - unlabeled
+      - reopened
+      - synchronize
+      - ready_for_review
+  workflow_run:
+    workflows:
+      - pr-check
+      - review-intake
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Pull request number"
+        required: true
+        type: string
+      merge_method:
+        description: "merge, squash, or rebase"
+        required: false
+        default: "merge"
+        type: string
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Resolve pull request number
+        id: pr
+        shell: bash
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          import os
+
+          event_name = os.environ["GITHUB_EVENT_NAME"]
+          if event_name == "workflow_dispatch":
+              print("number=${{ inputs.pr_number }}")
+              print("method=${{ inputs.merge_method }}")
+          else:
+              with open(os.environ["GITHUB_EVENT_PATH"], "r", encoding="utf-8") as file:
+                  event = json.load(file)
+
+              if event_name == "workflow_run":
+                  prs = event.get("workflow_run", {}).get("pull_requests", [])
+                  print(f"number={prs[0]['number'] if prs else ''}")
+                  print("method=merge")
+              else:
+                  print(f"number={event['pull_request']['number']}")
+                  print("method=merge")
+          PY
+
+      - name: Stop when no PR is available
+        if: steps.pr.outputs.number == ''
+        run: exit 0
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Evaluate and apply safe auto merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python3 scripts/pr_review_automation.py merge-check \
+            --repo "${{ github.repository }}" \
+            --pr "${{ steps.pr.outputs.number }}" \
+            --write \
+            --apply \
+            --merge-method "${{ steps.pr.outputs.method }}"
