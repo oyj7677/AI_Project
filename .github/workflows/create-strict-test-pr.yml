@@ -30,19 +30,19 @@ jobs:
         run: |
           git switch -c "$BRANCH_NAME"
           TS="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-          cat > AI_TEAM/docs/strict-pr-validation.md <<EOF
-# Strict PR Validation
-
-작성일: ${TS}
-
-이 문서는 엄격한 GitHub 보호 규칙 하에서 생성된 테스트 PR의 산출물이다.
-
-## Validation Goal
-
-- required status checks 확인
-- code owner review 확인
-- enforce_admins=true 환경에서 PR 기반 머지 확인
-EOF
+          printf '%s\n' \
+            '# Strict PR Validation' \
+            '' \
+            "작성일: ${TS}" \
+            '' \
+            '이 문서는 엄격한 GitHub 보호 규칙 하에서 생성된 테스트 PR의 산출물이다.' \
+            '' \
+            '## Validation Goal' \
+            '' \
+            '- required status checks 확인' \
+            '- code owner review 확인' \
+            '- enforce_admins=true 환경에서 PR 기반 머지 확인' \
+            > AI_TEAM/docs/strict-pr-validation.md
           git add AI_TEAM/docs/strict-pr-validation.md
           git commit -m "Add strict PR validation artifact"
           git push origin "$BRANCH_NAME"
