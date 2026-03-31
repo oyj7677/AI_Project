@@ -54,6 +54,12 @@
 - GitHub Actions 자동 승인 리뷰 확인 완료
 - PR 상태 확인 완료
 - PR `#1` 머지 완료
+- `required status checks = validate` 강제 완료
+- `require_code_owner_reviews = true` 적용 완료
+- `enforce_admins = true` 적용 완료
+- 엄격 규칙 검증용 PR `#2` 생성 완료
+- PR `#2`는 승인 전 `BLOCKED` 상태임을 확인
+- `validate` 상태 체크 성공 후에도 self-approval 불가로 인해 머지 불가 상태임을 확인
 
 ## 부분 완료 항목
 
@@ -62,6 +68,16 @@
 - 설정 등록은 완료되었다.
 - 다만 현재 세션에서 GitHub MCP 도구 호출 자체를 직접 사용해 PR 작업을 검증한 상태는 아니다.
 - Codex CLI 설정상으로는 활성화되어 있으며, 다음 Codex 세션 또는 MCP 재로딩 이후 실제 사용 검증이 필요하다.
+
+### 엄격 규칙 검증의 현재 한계
+
+- `require_code_owner_reviews = true` 상태에서 `oyj7677`가 만든 PR은 같은 `oyj7677`가 승인할 수 없다.
+- GitHub는 자기 PR self-approval을 허용하지 않음을 실제로 확인했다.
+- 따라서 현재처럼 단일 GitHub 사용자만 있는 구성에서는 엄격 규칙 하에서 end-to-end 머지 검증이 완료되지 않는다.
+- 이 검증을 끝까지 완료하려면 아래 중 하나가 추가로 필요하다.
+  - 별도의 리뷰어 계정
+  - 별도의 code owner 팀
+  - GitHub App 또는 별도 bot identity
 
 ### CODEOWNERS 실사용화
 
@@ -83,21 +99,23 @@
 ## 남은 핵심 작업
 
 1. `required status checks`를 branch protection에 연결할지 결정
-2. `require_code_owner_reviews`를 실제로 켤지 결정
+2. 단일 사용자 환경에서 `require_code_owner_reviews=true`를 유지할지 결정
 3. 팀 역할별 GitHub 계정 또는 승인 전략 확정
 4. GitHub MCP를 사용한 실제 PR 작업도 별도로 검증
+5. bot 또는 별도 리뷰어 identity를 이용한 엄격 규칙 최종 머지 검증
 
 ## 권장 다음 단계
 
 ### 바로 다음
 
-- `required status checks` 강제 여부 결정
-- `code owner review` 강제 여부 결정
+- 별도 리뷰어 계정 또는 GitHub team 준비
+- `CODEOWNERS`를 실제 다중 리뷰 구조에 맞게 확장
 
 ### 그 다음
 
 - `Codex GitHub MCP`로도 PR 조회/리뷰/머지 동작 검증
-- 필요하면 리뷰용 봇 계정 또는 GitHub App 분리
+- 리뷰용 봇 계정 또는 GitHub App 분리
+- 엄격 규칙 하에서 PR 생성 -> code owner review -> 머지 재검증
 
 ### 이후
 
