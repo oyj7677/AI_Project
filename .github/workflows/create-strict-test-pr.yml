@@ -1,0 +1,59 @@
+name: create-strict-test-pr
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch_name:
+        description: "Branch name for the test PR"
+        required: true
+        type: string
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Create branch and change
+        env:
+          BRANCH_NAME: ${{ inputs.branch_name }}
+        run: |
+          git switch -c "$BRANCH_NAME"
+          TS="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          cat > AI_TEAM/docs/strict-pr-validation.md <<EOF
+# Strict PR Validation
+
+작성일: ${TS}
+
+이 문서는 엄격한 GitHub 보호 규칙 하에서 생성된 테스트 PR의 산출물이다.
+
+## Validation Goal
+
+- required status checks 확인
+- code owner review 확인
+- enforce_admins=true 환경에서 PR 기반 머지 확인
+EOF
+          git add AI_TEAM/docs/strict-pr-validation.md
+          git commit -m "Add strict PR validation artifact"
+          git push origin "$BRANCH_NAME"
+
+      - name: Create PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH_NAME: ${{ inputs.branch_name }}
+        run: |
+          gh pr create \
+            --base main \
+            --head "$BRANCH_NAME" \
+            --title "Strict PR validation" \
+            --body "Automated test PR created by GitHub Actions for strict protection validation."
