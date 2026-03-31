@@ -14,6 +14,8 @@ jobs:
       - name: Verify required repo files
         run: |
           test -f .github/CODEOWNERS
+          test -f .github/copilot-instructions.md
+          test -f .github/agents/solo-reviewer.agent.md
           test -f .github/pull_request_template.md
           test -f AI_TEAM/00_HOME/AI_TEAM_HOME.md
           test -f AI_TEAM/docs/ai-team-github-pr-policy.md

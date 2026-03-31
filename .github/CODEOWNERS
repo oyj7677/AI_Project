@@ -1,8 +1,8 @@
 # Root CODEOWNERS for AI_Project
-# This is intentionally simple for the initial protection/review validation.
-# For a personal-account repository, the next practical step is to add a
-# separate collaborator with write access and list that user here.
-# Team-based owners should use the @org/team-name form in an organization repo.
+# In the current solo-maintainer mode, this file is an ownership map rather
+# than a required approval gate.
+# If the repository moves back to multi-reviewer operation, expand owners here
+# and re-enable required code owner review in branch protection.
 
 * @oyj7677
 /AI_TEAM/ @oyj7677

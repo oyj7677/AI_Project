@@ -1,4 +1,6 @@
-name: pr-review-bot
+# Legacy helper kept for historical strict-rule validation experiments.
+# Normal PR review is now handled by the solo-ai-review Copilot ruleset.
+name: legacy-pr-review-bot
 
 on:
   pull_request_target:

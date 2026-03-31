@@ -3,7 +3,7 @@ title: AI Team GitHub PR Policy
 type: policy
 status: active
 created: 2026-03-30
-updated: 2026-03-30
+updated: 2026-03-31
 ---
 
 # AI Team GitHub PR Policy
@@ -11,26 +11,32 @@ updated: 2026-03-30
 ## 목적
 
 이 문서는 AI 팀이 GitHub 기반으로 브랜치, PR, 리뷰, 승인, 머지를 운영하는 기준을 정의한다.
-핵심 목표는 `속도`보다 `권한 분리`, `검증 가능성`, `실수 방지`를 우선하는 것이다.
+현재 저장소의 기본 운영 모드는 `1인 개발 + AI reviewer 보조`이며, 핵심 목표는 `속도`보다 `검증 가능성`, `실수 방지`, `일관된 PR 기록`을 우선하는 것이다.
 
 ## 핵심 원칙
 
-- 작성자와 리뷰어를 분리한다.
-- 작성자와 머지 권한을 분리한다.
-- QA와 보안 검토는 작성자 승인으로 대체하지 않는다.
-- 최종 머지는 사람 또는 릴리즈 전용 역할만 수행한다.
+- `main` 변경은 PR을 통해서만 진행한다.
+- 기계적 검증은 사람 판단보다 먼저 통과시킨다.
+- 1인 개발에서는 사람 approval 수 대신 AI reviewer와 self-review 메모로 보완한다.
+- 최종 머지는 저장소 owner가 AI 리뷰 결과와 리스크를 확인한 뒤 수행한다.
 - PR은 문서 근거 없이 열지 않는다.
+
+## 현재 운영 모드: Solo Developer
+
+- 현재 저장소는 단일 GitHub 사용자 기준으로 운영한다.
+- GitHub의 self-approval 제한 때문에 `required_approving_review_count=1`과 `require_code_owner_reviews=true`는 사용하지 않는다.
+- 대신 머지 게이트를 `PR + validate 체크 + Copilot AI review + self-review 기록`으로 둔다.
+- `.github/CODEOWNERS`는 현재 필수 승인 게이트가 아니라 ownership map으로 유지한다.
 
 ## 역할과 권한
 
 | 역할 | 권장 권한 | 금지 권한 |
 | --- | --- | --- |
-| Executor / Developer | 브랜치 작업, 커밋, 테스트 | 직접 머지 |
-| Reviewer | PR 리뷰, 코멘트, 승인 의견 | 코드 작성 브랜치에 직접 푸시 |
-| QA / Verifier | 테스트 결과 확인, 검증 의견 | 직접 머지 |
+| Solo Maintainer | 브랜치 작업, 커밋, 테스트, PR 작성, 최종 머지 | PR 없는 직접 푸시 |
+| AI Reviewer (Copilot) | PR 리뷰, 회귀/위험/테스트 누락 지적, 머지 권고 | required approval count 대체 |
+| QA / Verifier | 테스트 결과 확인, 검증 의견 | 직접 `main` 푸시 |
 | Security / Release Reviewer | 보안 검토, 위험도 평가 | 개발 브랜치 직접 수정 |
 | Release Agent | PR 생성, 머지 준비, 병합 처리 | 구현 담당 |
-| Human Approver | 최종 승인, 예외 승인, 머지 판단 | 없음 |
 
 ## 권장 브랜치 전략
 
@@ -74,39 +80,45 @@ PR을 열기 전에 아래 조건을 만족해야 한다.
 
 ### 3. PR Opening
 
-- Executor가 직접 PR을 열게 할 수도 있지만, 하네스 관점에서는 `Release Agent` 또는 `Leader Agent`가 PR을 여는 편이 더 안전하다.
-- 이유는 구현 권한과 외부 시스템 쓰기 권한을 분리할 수 있기 때문이다.
+- 1인 개발에서는 작성자가 직접 PR을 열어도 된다.
+- 다만 PR 템플릿의 `Validation`, `Risks`, `Review Notes`, `AI Review Handoff`를 반드시 채워 AI reviewer가 판단할 근거를 남긴다.
 
 ### 4. Review
 
-- Reviewer가 버그, 회귀, 테스트 누락을 본다.
-- Security 역할이 권한, 시크릿, 위험 변경을 본다.
-- QA 역할이 acceptance criteria 충족 여부를 본다.
+- `solo-ai-review` ruleset이 Copilot 코드 리뷰를 자동 요청한다.
+- `.github/agents/solo-reviewer.agent.md`는 더 깊은 후속 리뷰에 사용할 표준 reviewer profile이다.
+- 작성자는 AI 리뷰가 지적한 blocking 이슈를 반영하거나, 왜 머지 가능한지 근거를 남긴다.
 
 ### 5. Merge Gate
 
-- CI 통과
-- required reviews 충족
-- code owner review 충족
-- 최신 푸시에 대한 재승인 조건 충족
-- 사람 또는 릴리즈 역할 승인
+- CI `validate` 통과
+- PR 템플릿 필수 섹션 작성 완료
+- 최신 푸시 기준 AI review 확인
+- self-review 메모 또는 후속 조치 기록 완료
+- 최종 머지 판단은 저장소 owner가 수행
 
 ### 6. Merge
 
-- 머지는 사람 또는 Release Agent만 수행한다.
+- 머지는 저장소 owner 또는 Release Agent가 수행한다.
+- low-risk 문서/설정 PR은 AI 리뷰 확인 후 바로 머지할 수 있다.
 
 ## GitHub 설정 권장안
 
-### 필수
+### 1인 개발 기본값
 
 - Branch protection 또는 ruleset 활성화
+- Require a pull request before merging 유지
 - Required status checks 활성화
+- Required approving reviews = `0`
+- Require review from code owners = `off`
+- Enforce admins = `on`
+- Copilot code review ruleset 활성화
+
+### 팀 운영으로 확장할 때
+
 - Required pull request reviews 활성화
 - Dismiss stale approvals 활성화
 - Require review from code owners 활성화
-
-### 권장
-
 - Require approval for the most recent push 활성화
 - Merge queue 사용 고려
 - Force push 금지
@@ -123,30 +135,29 @@ GitHub MCP는 필수는 아니지만, 아래 작업을 자동화하려면 매우
 
 ### 권장 권한 분리
 
-- Executor: GitHub MCP 없음 또는 읽기 제한
-- Reviewer / QA / Security: read-only GitHub MCP
+- Solo Maintainer: GitHub MCP 읽기/쓰기 가능, 단 PR 경로 중심
+- AI Reviewer: GitHub Copilot review 또는 read-only MCP
+- QA / Security: read-only GitHub MCP
 - Release Agent: 쓰기 가능한 GitHub MCP, 단 PR 관련 작업만 허용
-- Human Approver: 최종 승인
 
 이 방식이 좋은 이유:
 
-- 구현자가 외부 시스템에 직접 쓰지 않아도 된다.
-- 리뷰 에이전트는 안전하게 코멘트만 남길 수 있다.
-- 머지 권한이 좁은 역할에만 집중된다.
+- 머지 기록과 검증 근거가 PR에 남는다.
+- AI reviewer는 안전하게 코멘트 중심으로 동작할 수 있다.
+- 사람 approval을 억지로 요구하지 않아도 solo 흐름을 유지할 수 있다.
 
 ## 중요한 운영 메모
 
 실무적으로는 여러 에이전트가 같은 GitHub 계정이나 같은 토큰을 공유하면 GitHub 입장에서는 사실상 하나의 리뷰 정체성으로 취급된다.
-따라서 "역할 수만큼 독립 승인"을 기대하기보다는, 에이전트 리뷰는 보조 신호로 보고 최종 승인 게이트는 사람 또는 분리된 승인 정체성으로 두는 것이 안전하다.
+따라서 solo 저장소에서는 approval count를 운영 게이트로 삼기보다, AI review 결과와 self-review 기록을 함께 남기는 편이 더 현실적이다.
 
 ## 권장 운영 토폴로지
 
-### 최소 운영형
+### 1인 개발형
 
-- Executor 1명
-- Reviewer 1명
-- QA 1명
-- Human Approver 1명
+- Solo Maintainer 1명
+- AI Reviewer 1명
+- 필요 시 QA / Security reviewer
 
 ### 표준 운영형
 
@@ -201,8 +212,13 @@ Obsidian 위키링크 예시:
 - Related PRD:
 - Related ADR:
 - Related Decisions:
+
+## AI Review Handoff
+- Copilot reviewer가 집중해서 볼 리스크:
+- 작성자가 이미 직접 확인한 항목:
+- 머지 전 다시 확인할 항목:
 ```
 
 ## 한 줄 요약
 
-GitHub 기반 AI 팀 운영에서는 `작성`, `리뷰`, `승인`, `머지` 권한을 분리하고, GitHub MCP는 주로 `리뷰/PR/머지 자동화` 레이어에만 제한적으로 붙이는 것이 가장 안전하다.
+1인 개발 저장소에서는 `PR`, `validate`, `Copilot AI review`, `self-review 기록`을 기본 게이트로 두고, 사람 approval 수는 강제하지 않는 구성이 가장 현실적이다.

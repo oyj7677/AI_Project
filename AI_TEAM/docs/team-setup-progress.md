@@ -8,8 +8,8 @@
 
 ## 전체 상태
 
-- 현재 상태: `기반 구조 정리 완료, GitHub 보호 규칙 적용 완료, 테스트 PR 검증 완료`
-- 체감 진행률: `약 90%`
+- 현재 상태: `1인 개발용 GitHub 규칙 전환 완료, Copilot AI reviewer 적용 진행 중`
+- 체감 진행률: `약 97%`
 
 ## 완료된 항목
 
@@ -60,6 +60,12 @@
 - 엄격 규칙 검증용 PR `#2` 생성 완료
 - PR `#2`는 승인 전 `BLOCKED` 상태임을 확인
 - `validate` 상태 체크 성공 후에도 self-approval 불가로 인해 머지 불가 상태임을 확인
+- 엄격 규칙 검증 결과를 바탕으로 1인 개발용 보호 규칙 재설계 완료
+- `required_approving_review_count = 0` 재구성 완료
+- `require_code_owner_reviews = false` 재구성 완료
+- `solo-ai-review` Copilot ruleset 생성 완료
+- `.github/copilot-instructions.md` 추가 완료
+- `.github/agents/solo-reviewer.agent.md` 추가 완료
 
 ## 부분 완료 항목
 
@@ -72,22 +78,19 @@
 - 즉, MCP 경로는 정상 동작하며 현재 blocker는 MCP 미동작이 아니라 self-approval 제한이다.
 - 현재 세션에 노출된 GitHub MCP 액션에는 direct merge 호출이 없으므로, 최종 머지는 `gh` 또는 GitHub UI, 혹은 `enable_auto_merge` 경로로 검증해야 한다.
 
-### 엄격 규칙 검증의 현재 한계
+### 1인 개발 리뷰 모드
 
-- `require_code_owner_reviews = true` 상태에서 `oyj7677`가 만든 PR은 같은 `oyj7677`가 승인할 수 없다.
-- GitHub는 자기 PR self-approval을 허용하지 않음을 실제로 확인했다.
-- 따라서 현재처럼 단일 GitHub 사용자만 있는 구성에서는 엄격 규칙 하에서 end-to-end 머지 검증이 완료되지 않는다.
-- 이 검증을 끝까지 완료하려면 아래 중 하나가 추가로 필요하다.
-  - 별도의 리뷰어 계정
-  - organization 저장소 + visible code owner team
-  - GitHub App 또는 별도 bot identity
+- 현재 `main` 브랜치는 PR 기반 흐름과 `validate` 체크를 유지한다.
+- 사람 approval count와 code owner approval은 강제하지 않는다.
+- 대신 Copilot AI review ruleset과 self-review 기록을 기본 리뷰 게이트로 사용한다.
+- 최종 머지는 저장소 owner가 AI 리뷰 결과를 확인한 뒤 수행한다.
 
 ### CODEOWNERS 실사용화
 
 - 저장소 루트 `.github/CODEOWNERS`에는 실제 사용자 `@oyj7677`가 반영되었다.
 - `AI_TEAM/.github/CODEOWNERS`는 참고용 초안으로 남아 있다.
-- 현재 저장소는 personal repository이므로, 가장 간단한 다음 단계는 별도 collaborator 사용자에게 `write` 권한을 부여하고 해당 계정을 CODEOWNERS에 반영하는 것이다.
-- team 기반 CODEOWNERS는 organization 저장소에서 `@org/team-name` 형태로 운영하는 쪽이 맞다.
+- 현재 solo 모드에서는 ownership map 용도로 유지한다.
+- 이후 multi-reviewer 체제로 전환하면 collaborator 또는 organization team 기준으로 다시 확장한다.
 
 ### PR / 리뷰 규칙 강제
 
@@ -103,25 +106,24 @@
 
 ## 남은 핵심 작업
 
-1. 단일 사용자 환경에서 `require_code_owner_reviews=true`를 유지할지 결정
-2. personal repo 기준 별도 reviewer collaborator를 둘지, organization 이전 후 team reviewer로 갈지 결정
-3. 결정된 리뷰 구조에 맞게 `.github/CODEOWNERS`를 수정
-4. 별도 reviewer identity로 PR `#2` 승인
-5. `gh` 또는 GitHub UI, 필요하면 auto-merge까지 포함해 엄격 규칙 하 최종 머지 검증
+1. PR `#2`에서 Copilot AI review 재실행 확인
+2. 새 solo-review 규칙 하에서 PR 머지 검증
+3. 필요 시 auto-merge 또는 merge queue 정책 추가 검토
+4. multi-reviewer 체제로 확장할 시 CODEOWNERS와 review 규칙 재강화
 
 ## 권장 다음 단계
 
 ### 바로 다음
 
-- personal repo라면 별도 리뷰어 GitHub 계정을 collaborator로 추가
-- organization 운영을 원한다면 저장소 이전 후 visible GitHub team 생성
-- 결정된 구조에 맞게 `CODEOWNERS`를 실제 다중 리뷰 구조로 확장
+- PR `#2`에서 Copilot AI review가 최신 커밋 기준으로 다시 붙는지 확인
+- `validate` 통과 후 solo-review 기준으로 머지 검증
+- 운영 문서에 최종 검증 결과 반영
 
 ### 그 다음
 
-- `Codex GitHub MCP`로 PR 조회와 리뷰 쓰기 검증 결과를 운영 문서에 반영
-- 리뷰용 봇 계정 또는 GitHub App 분리
-- 엄격 규칙 하에서 PR 생성 -> code owner review -> 머지 재검증
+- `Codex GitHub MCP`로 PR 조회와 리뷰 쓰기 검증 결과를 운영 문서에 반영 유지
+- 필요 시 auto-merge 전략 또는 release agent 경로 추가
+- 팀 확장 시 required reviews / code owner review 재적용
 
 ### 이후
 
