@@ -3,7 +3,7 @@
 작성일: 2026-03-31
 
 이 문서는 `review-intake`, `/ai-fix-review`, `safe-auto-merge` 흐름을
-실저장소에서 검증하기 위한 저위험 smoke test 산출물이다.
+실제 저장소에서 검증하기 위한 저위험 smoke test 산출물이다.
 
 ## Purpose
 
