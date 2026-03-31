@@ -61,6 +61,18 @@
 - 총 diff 크기가 400 line 이하이다.
 - `safe-auto-merge` 라벨이 수동으로 추가되어 있다.
 
+### Follow-up 예외
+
+아래 조건을 모두 만족하면 current head에 fresh Copilot review가 없어도 자동 머지를 허용할 수 있다.
+
+- PR이 docs-only low-risk 변경이다.
+- high-risk path가 없다.
+- 최신 `Review Intake` 기준 actionable task가 없다.
+- 이전 Copilot actionable comment는 stale thread로 남아 있다.
+- 최신 head commit이 그 Copilot actionable 이후에 들어온 사람 커밋이다.
+
+이 예외는 "직전 Copilot actionable을 사람이 문서 PR에서 바로 반영한 후, GitHub가 새 head에 re-review를 다시 생성하지 않는 경우"를 위한 좁은 안전장치다.
+
 ## High-Risk Path
 
 다음 경로가 포함되면 자동 머지를 막는다.
