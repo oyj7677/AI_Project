@@ -8,8 +8,8 @@
 
 ## 전체 상태
 
-- 현재 상태: `기반 구조 정리 완료, GitHub 연동 1차 완료, 팀 운영 준비 단계`
-- 체감 진행률: `약 70%`
+- 현재 상태: `기반 구조 정리 완료, GitHub 보호 규칙 적용 완료, 테스트 PR 검증 완료`
+- 체감 진행률: `약 90%`
 
 ## 완료된 항목
 
@@ -32,6 +32,8 @@
 - `CODEOWNERS` 초안 생성
 - `pull_request_template.md` 생성
 - GitHub Actions PR 자동화 예시 생성
+- 저장소 루트 `.github/CODEOWNERS` 적용
+- 저장소 루트 `pull_request_template.md` 적용
 
 ### GitHub 인증 / 도구 연동
 
@@ -40,23 +42,37 @@
 - Codex global MCP에 `github-release` 등록 완료
 - 두 MCP 모두 remote GitHub MCP URL과 bearer token env var 기준으로 등록 완료
 
+### 실제 GitHub 저장소 검증
+
+- 대상 저장소: `oyj7677/AI_Project`
+- `main` 브랜치 초기 커밋 및 푸시 완료
+- GitHub Actions workflow permissions를 `write`로 조정 완료
+- GitHub Actions PR 승인 허용 활성화 완료
+- `main` 브랜치 보호 규칙 적용 완료
+- Required approving reviews = `1` 적용 완료
+- 테스트 PR `#1` 생성 완료
+- GitHub Actions 자동 승인 리뷰 확인 완료
+- PR 상태 확인 완료
+- PR `#1` 머지 완료
+
 ## 부분 완료 항목
 
 ### GitHub MCP 런타임 검증
 
 - 설정 등록은 완료되었다.
-- 다만 현재 세션에서 GitHub MCP 도구 호출까지 직접 검증한 상태는 아니다.
+- 다만 현재 세션에서 GitHub MCP 도구 호출 자체를 직접 사용해 PR 작업을 검증한 상태는 아니다.
 - Codex CLI 설정상으로는 활성화되어 있으며, 다음 Codex 세션 또는 MCP 재로딩 이후 실제 사용 검증이 필요하다.
 
 ### CODEOWNERS 실사용화
 
-- 파일은 생성되었지만 placeholder가 남아 있다.
-- 실제 GitHub 사용자명 또는 팀명으로 교체해야 한다.
+- 저장소 루트 `.github/CODEOWNERS`에는 실제 사용자 `@oyj7677`가 반영되었다.
+- `AI_TEAM/.github/CODEOWNERS`는 참고용 초안으로 남아 있다.
 
 ### PR / 리뷰 규칙 강제
 
 - 문서와 템플릿은 준비되었다.
-- GitHub 저장소의 branch protection / ruleset / required review 설정은 저장소 UI에서 실제 적용해야 한다.
+- GitHub 저장소의 branch protection / required review 설정은 실제 적용까지 완료되었다.
+- 필요 시 이후 `required status checks`를 추가로 강화할 수 있다.
 
 ## 확인된 제약
 
@@ -66,24 +82,22 @@
 
 ## 남은 핵심 작업
 
-1. 실제 GitHub 저장소에 `CODEOWNERS` 반영
-2. Branch protection / rulesets 적용
-3. Required reviews / code owner reviews / status checks 활성화
-4. GitHub Actions workflow permissions 설정
-5. 실제 저장소 기준으로 PR 생성 -> 리뷰 코멘트 -> 상태 확인 -> 머지 흐름 검증
-6. 팀 역할별 GitHub 계정 또는 승인 전략 확정
+1. `required status checks`를 branch protection에 연결할지 결정
+2. `require_code_owner_reviews`를 실제로 켤지 결정
+3. 팀 역할별 GitHub 계정 또는 승인 전략 확정
+4. GitHub MCP를 사용한 실제 PR 작업도 별도로 검증
 
 ## 권장 다음 단계
 
 ### 바로 다음
 
-- 실제 GitHub 사용자명과 팀명을 확정해 `CODEOWNERS` 채우기
-- 저장소에서 branch protection 설정하기
+- `required status checks` 강제 여부 결정
+- `code owner review` 강제 여부 결정
 
 ### 그 다음
 
-- 테스트용 브랜치로 PR 하나 생성
-- `gh`, Codex GitHub MCP, Actions 예시를 각각 한 번씩 검증
+- `Codex GitHub MCP`로도 PR 조회/리뷰/머지 동작 검증
+- 필요하면 리뷰용 봇 계정 또는 GitHub App 분리
 
 ### 이후
 
