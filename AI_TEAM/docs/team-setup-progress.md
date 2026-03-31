@@ -66,8 +66,11 @@
 ### GitHub MCP 런타임 검증
 
 - 설정 등록은 완료되었다.
-- 다만 현재 세션에서 GitHub MCP 도구 호출 자체를 직접 사용해 PR 작업을 검증한 상태는 아니다.
-- Codex CLI 설정상으로는 활성화되어 있으며, 다음 Codex 세션 또는 MCP 재로딩 이후 실제 사용 검증이 필요하다.
+- 현재 세션에서 GitHub MCP로 PR `#2` 조회를 직접 검증했다.
+- 현재 세션에서 GitHub MCP로 PR `#2` `COMMENT` 리뷰 제출을 직접 검증했다.
+- 현재 세션에서 GitHub MCP로 PR `#2` `APPROVE` 시도 시 GitHub API `422` 응답을 직접 확인했다.
+- 즉, MCP 경로는 정상 동작하며 현재 blocker는 MCP 미동작이 아니라 self-approval 제한이다.
+- 현재 세션에 노출된 GitHub MCP 액션에는 direct merge 호출이 없으므로, 최종 머지는 `gh` 또는 GitHub UI, 혹은 `enable_auto_merge` 경로로 검증해야 한다.
 
 ### 엄격 규칙 검증의 현재 한계
 
@@ -76,13 +79,15 @@
 - 따라서 현재처럼 단일 GitHub 사용자만 있는 구성에서는 엄격 규칙 하에서 end-to-end 머지 검증이 완료되지 않는다.
 - 이 검증을 끝까지 완료하려면 아래 중 하나가 추가로 필요하다.
   - 별도의 리뷰어 계정
-  - 별도의 code owner 팀
+  - organization 저장소 + visible code owner team
   - GitHub App 또는 별도 bot identity
 
 ### CODEOWNERS 실사용화
 
 - 저장소 루트 `.github/CODEOWNERS`에는 실제 사용자 `@oyj7677`가 반영되었다.
 - `AI_TEAM/.github/CODEOWNERS`는 참고용 초안으로 남아 있다.
+- 현재 저장소는 personal repository이므로, 가장 간단한 다음 단계는 별도 collaborator 사용자에게 `write` 권한을 부여하고 해당 계정을 CODEOWNERS에 반영하는 것이다.
+- team 기반 CODEOWNERS는 organization 저장소에서 `@org/team-name` 형태로 운영하는 쪽이 맞다.
 
 ### PR / 리뷰 규칙 강제
 
@@ -98,22 +103,23 @@
 
 ## 남은 핵심 작업
 
-1. `required status checks`를 branch protection에 연결할지 결정
-2. 단일 사용자 환경에서 `require_code_owner_reviews=true`를 유지할지 결정
-3. 팀 역할별 GitHub 계정 또는 승인 전략 확정
-4. GitHub MCP를 사용한 실제 PR 작업도 별도로 검증
-5. bot 또는 별도 리뷰어 identity를 이용한 엄격 규칙 최종 머지 검증
+1. 단일 사용자 환경에서 `require_code_owner_reviews=true`를 유지할지 결정
+2. personal repo 기준 별도 reviewer collaborator를 둘지, organization 이전 후 team reviewer로 갈지 결정
+3. 결정된 리뷰 구조에 맞게 `.github/CODEOWNERS`를 수정
+4. 별도 reviewer identity로 PR `#2` 승인
+5. `gh` 또는 GitHub UI, 필요하면 auto-merge까지 포함해 엄격 규칙 하 최종 머지 검증
 
 ## 권장 다음 단계
 
 ### 바로 다음
 
-- 별도 리뷰어 계정 또는 GitHub team 준비
-- `CODEOWNERS`를 실제 다중 리뷰 구조에 맞게 확장
+- personal repo라면 별도 리뷰어 GitHub 계정을 collaborator로 추가
+- organization 운영을 원한다면 저장소 이전 후 visible GitHub team 생성
+- 결정된 구조에 맞게 `CODEOWNERS`를 실제 다중 리뷰 구조로 확장
 
 ### 그 다음
 
-- `Codex GitHub MCP`로도 PR 조회/리뷰/머지 동작 검증
+- `Codex GitHub MCP`로 PR 조회와 리뷰 쓰기 검증 결과를 운영 문서에 반영
 - 리뷰용 봇 계정 또는 GitHub App 분리
 - 엄격 규칙 하에서 PR 생성 -> code owner review -> 머지 재검증
 
