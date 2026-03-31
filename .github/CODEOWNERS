@@ -1,0 +1,6 @@
+# Root CODEOWNERS for AI_Project
+# This is intentionally simple for the initial protection/review validation.
+
+* @oyj7677
+/AI_TEAM/ @oyj7677
+/.github/ @oyj7677

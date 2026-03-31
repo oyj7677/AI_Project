@@ -1,0 +1,111 @@
+name: pr-automation-example
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Existing PR number"
+        required: false
+        type: string
+      base_branch:
+        description: "Base branch for PR creation"
+        required: false
+        default: "main"
+        type: string
+      head_branch:
+        description: "Head branch for PR creation"
+        required: false
+        type: string
+      pr_title:
+        description: "PR title when creating a new PR"
+        required: false
+        type: string
+      pr_body:
+        description: "PR body when creating a new PR"
+        required: false
+        type: string
+      review_comment:
+        description: "Review comment body"
+        required: false
+        default: "Automated review comment."
+        type: string
+      approve:
+        description: "Approve the PR"
+        required: true
+        default: false
+        type: boolean
+      enable_auto_merge:
+        description: "Enable auto-merge"
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  pr-ops:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: read
+      statuses: read
+    steps:
+      - name: Validate input
+        run: |
+          if [ -z "${{ inputs.pr_number }}" ] && [ -z "${{ inputs.head_branch }}" ]; then
+            echo "Provide either pr_number or head_branch."
+            exit 1
+          fi
+
+      - name: Create PR when branch input is provided
+        if: ${{ inputs.pr_number == '' && inputs.head_branch != '' }}
+        run: |
+          gh pr create \
+            --base "${{ inputs.base_branch }}" \
+            --head "${{ inputs.head_branch }}" \
+            --title "${{ inputs.pr_title }}" \
+            --body "${{ inputs.pr_body }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve PR number
+        id: pr
+        run: |
+          if [ -n "${{ inputs.pr_number }}" ]; then
+            echo "number=${{ inputs.pr_number }}" >> "$GITHUB_OUTPUT"
+          else
+            PR_NUMBER=$(gh pr view "${{ inputs.head_branch }}" --json number --jq .number)
+            echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Show PR status
+        run: |
+          gh pr view "${{ steps.pr.outputs.number }}" \
+            --json number,title,reviewDecision,mergeStateStatus,statusCheckRollup
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add review comment
+        run: |
+          gh pr review "${{ steps.pr.outputs.number }}" \
+            --comment \
+            --body "${{ inputs.review_comment }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Approve PR
+        if: ${{ inputs.approve }}
+        run: |
+          gh pr review "${{ steps.pr.outputs.number }}" \
+            --approve \
+            --body "Automated approval."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable auto-merge
+        if: ${{ inputs.enable_auto_merge }}
+        run: |
+          gh pr merge "${{ steps.pr.outputs.number }}" --squash --auto
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

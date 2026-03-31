@@ -1,0 +1,19 @@
+name: pr-check
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify required repo files
+        run: |
+          test -f .github/CODEOWNERS
+          test -f .github/pull_request_template.md
+          test -f AI_TEAM/00_HOME/AI_TEAM_HOME.md
+          test -f AI_TEAM/docs/ai-team-github-pr-policy.md

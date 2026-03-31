@@ -1,0 +1,16 @@
+# CODEOWNERS draft
+# Replace placeholder owners before enforcing required code owner reviews.
+# Examples:
+#   @your-github-id
+#   @your-org/platform-team
+#   @your-org/ai-reviewers
+
+* @your-github-id
+
+/docs/ @your-github-id @your-org/ai-reviewers
+/00_HOME/ @your-github-id @your-org/ai-reviewers
+/10_PRD/ @your-org/product-owners @your-org/tech-leads
+/20_ADR/ @your-org/architects @your-org/tech-leads
+/30_DECISIONS/ @your-org/tech-leads
+/40_TEMPLATES/ @your-org/ai-ops
+/.github/ @your-org/release-managers @your-org/ai-ops
