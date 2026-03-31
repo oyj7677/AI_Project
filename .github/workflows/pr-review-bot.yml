@@ -13,12 +13,13 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
-      contents: read
     steps:
       - name: Approve test PR
         run: |
-          gh pr review "${{ github.event.pull_request.number }}" \
-            --approve \
-            --body "Automated approval for PR flow validation."
+          gh api \
+            --method POST \
+            "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews" \
+            -f event=APPROVE \
+            -f body="Automated approval for PR flow validation."
         env:
           GH_TOKEN: ${{ github.token }}
