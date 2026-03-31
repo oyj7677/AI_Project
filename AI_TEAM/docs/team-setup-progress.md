@@ -66,6 +66,13 @@
 - `solo-ai-review` Copilot ruleset 생성 완료
 - `.github/copilot-instructions.md` 추가 완료
 - `.github/agents/solo-reviewer.agent.md` 추가 완료
+- `.github/agents/review-intake.agent.md` 추가 완료
+- `.github/agents/fix-review-comments.agent.md` 추가 완료
+- `.github/workflows/review-intake.yml` 추가 완료
+- `.github/workflows/request-ai-fix.yml` 추가 완료
+- `.github/workflows/safe-auto-merge.yml` 추가 완료
+- `scripts/pr_review_automation.py` 추가 완료
+- AI review loop 문서 추가 완료
 
 ## 부분 완료 항목
 
@@ -84,6 +91,13 @@
 - 사람 approval count와 code owner approval은 강제하지 않는다.
 - 대신 Copilot AI review ruleset과 self-review 기록을 기본 리뷰 게이트로 사용한다.
 - 최종 머지는 저장소 owner가 AI 리뷰 결과를 확인한 뒤 수행한다.
+
+### AI Review Loop 자동화
+
+- Copilot review를 task로 바꾸는 `review-intake` 에이전트와 워크플로가 추가되었다.
+- actionable task를 다시 Copilot 수정 요청으로 넘기는 `fix-review-comments` 에이전트와 `/ai-fix-review` 트리거가 추가되었다.
+- low-risk PR에 한해 `safe-auto-merge` 라벨 기반 자동 머지 워크플로가 추가되었다.
+- 다만 Copilot coding agent가 푸시한 뒤에는 GitHub Actions 재실행 승인 과정이 필요할 수 있다.
 
 ### CODEOWNERS 실사용화
 
@@ -106,18 +120,18 @@
 
 ## 남은 핵심 작업
 
-1. PR `#2`에서 Copilot AI review 재실행 확인
-2. 새 solo-review 규칙 하에서 PR 머지 검증
-3. 필요 시 auto-merge 또는 merge queue 정책 추가 검토
+1. `review-intake`와 `safe-auto-merge`를 `main` 머지 후 실환경에서 검증
+2. `/ai-fix-review` 코멘트로 Copilot coding agent 실제 반응 확인
+3. Copilot 푸시 후 workflow 승인 절차를 운영 루틴에 반영
 4. multi-reviewer 체제로 확장할 시 CODEOWNERS와 review 규칙 재강화
 
 ## 권장 다음 단계
 
 ### 바로 다음
 
-- PR `#2`에서 Copilot AI review가 최신 커밋 기준으로 다시 붙는지 확인
-- `validate` 통과 후 solo-review 기준으로 머지 검증
-- 운영 문서에 최종 검증 결과 반영
+- `review-intake` dry run으로 현재 PR 상태 점검
+- Copilot이 남긴 workflow 보안 코멘트 반영
+- `main` 머지 후 `/ai-fix-review`와 `safe-auto-merge` 실동작 검증
 
 ### 그 다음
 

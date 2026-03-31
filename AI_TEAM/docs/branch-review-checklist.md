@@ -48,6 +48,7 @@
 - AI 리뷰가 남긴 blocking 지적을 반영했는가
 - 반영하지 않은 지적에는 PR 코멘트로 근거를 남겼는가
 - 작성자가 스스로 확인한 항목이 `AI Review Handoff`에 적혀 있는가
+- `Review Intake` 코멘트가 최신 head commit 기준으로 갱신되었는가
 
 ## QA 체크리스트
 
@@ -70,6 +71,7 @@
 - required checks가 모두 통과했는가
 - Copilot AI review가 최신 푸시 기준으로 확인되었는가
 - self-review 메모 또는 후속 조치 기록이 남아 있는가
+- `safe-auto-merge`를 쓸 경우 low-risk 조건을 만족하는가
 - PR 설명과 문서 링크가 최신 상태인가
 - 머지 후 후속 작업이 정리되어 있는가
 
@@ -84,5 +86,6 @@
 ## 관련 문서
 
 - [AI Team GitHub PR Policy](./ai-team-github-pr-policy.md)
+- [AI Review Automation](./ai-review-automation.md)
 - [AI Team Blueprint](./ai-team-blueprint.md)
 - [AI Team Skill Stack](./ai-team-skill-stack.md)

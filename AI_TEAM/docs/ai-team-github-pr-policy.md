@@ -33,7 +33,7 @@ updated: 2026-03-31
 | 역할 | 권장 권한 | 금지 권한 |
 | --- | --- | --- |
 | Solo Maintainer | 브랜치 작업, 커밋, 테스트, PR 작성, 최종 머지 | PR 없는 직접 푸시 |
-| AI Reviewer (Copilot) | PR 리뷰, 회귀/위험/테스트 누락 지적, 머지 권고 | required approval count 대체 |
+| AI Reviewer (Copilot) | PR 리뷰, 회귀/위험/테스트 누락 지적, 머지 권고 | GitHub `required_approving_review_count`를 충족한 정식 human approval로 간주 |
 | QA / Verifier | 테스트 결과 확인, 검증 의견 | 직접 `main` 푸시 |
 | Security / Release Reviewer | 보안 검토, 위험도 평가 | 개발 브랜치 직접 수정 |
 | Release Agent | PR 생성, 머지 준비, 병합 처리 | 구현 담당 |
@@ -146,6 +146,14 @@ GitHub MCP는 필수는 아니지만, 아래 작업을 자동화하려면 매우
 - AI reviewer는 안전하게 코멘트 중심으로 동작할 수 있다.
 - 사람 approval을 억지로 요구하지 않아도 solo 흐름을 유지할 수 있다.
 
+## AI Review Loop
+
+- `review-intake`가 Copilot 리뷰를 actionable task로 변환한다.
+- `fix-review-comments`는 actionable task만 수정 대상으로 삼는다.
+- `safe-auto-merge`는 low-risk PR에 한해 opt-in 라벨 기반으로만 동작한다.
+- `.github/workflows/**`, `scripts/**`, 권한/정책 파일 변경은 기본적으로 manual review로 남긴다.
+- 이 흐름의 상세 조건은 [AI Review Automation](./ai-review-automation.md)에 정리한다.
+
 ## 중요한 운영 메모
 
 실무적으로는 여러 에이전트가 같은 GitHub 계정이나 같은 토큰을 공유하면 GitHub 입장에서는 사실상 하나의 리뷰 정체성으로 취급된다.
@@ -188,6 +196,7 @@ Obsidian 위키링크 예시:
 ## 관련 파일
 
 - [Branch Review Checklist](./branch-review-checklist.md)
+- [AI Review Automation](./ai-review-automation.md)
 - [CODEOWNERS Draft](../.github/CODEOWNERS)
 - [PR Template](../.github/pull_request_template.md)
 
