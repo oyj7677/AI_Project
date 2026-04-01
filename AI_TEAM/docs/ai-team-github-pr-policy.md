@@ -151,6 +151,7 @@ GitHub MCP는 필수는 아니지만, 아래 작업을 자동화하려면 매우
 - `review-intake`가 Copilot 리뷰를 actionable task로 변환한다.
 - `fix-review-comments`는 actionable task만 수정 대상으로 삼는다.
 - `safe-auto-merge`는 low-risk PR에 한해 opt-in 라벨 기반으로만 동작한다.
+- docs-only low-risk follow-up PR에서는 직전 Copilot actionable을 사람이 반영한 경우 fresh re-review 없이도 예외적으로 자동 머지를 허용할 수 있다.
 - `.github/workflows/**`, `scripts/**`, 권한/정책 파일 변경은 기본적으로 manual review로 남긴다.
 - 이 흐름의 상세 조건은 [AI Review Automation](./ai-review-automation.md)에 정리한다.
 

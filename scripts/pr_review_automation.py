@@ -10,6 +10,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 
@@ -57,6 +58,11 @@ LOW_RISK_PATTERNS = (
 COPILOT_REVIEWERS = (
     "copilot-pull-request-reviewer",
     "copilot-pull-request-reviewer[bot]",
+)
+
+BOT_LOGIN_PREFIXES = (
+    "copilot-pull-request-reviewer",
+    "github-actions",
 )
 
 
@@ -142,6 +148,22 @@ def is_copilot_author(login: Optional[str]) -> bool:
     if not login:
         return False
     return any(login.startswith(prefix) for prefix in COPILOT_REVIEWERS)
+
+
+def is_bot_identity(login: Optional[str], name: Optional[str], email: Optional[str]) -> bool:
+    if login and any(login.startswith(prefix) for prefix in BOT_LOGIN_PREFIXES):
+        return True
+    if name and "[bot]" in name.lower():
+        return True
+    if email and "[bot]" in email.lower():
+        return True
+    return False
+
+
+def parse_timestamp(value: Optional[str]) -> Optional[datetime]:
+    if not value:
+        return None
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
 def strip_markdown(text: str) -> str:
@@ -268,6 +290,23 @@ def load_pr(repo: str, pr_number: int) -> dict:
           headRepository {
             nameWithOwner
           }
+          latestCommit: commits(last: 1) {
+            nodes {
+              commit {
+                oid
+                committedDate
+                authors(first: 1) {
+                  nodes {
+                    name
+                    email
+                    user {
+                      login
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -383,6 +422,96 @@ def low_risk_only(pr: dict) -> bool:
     return all(matches_any(path, LOW_RISK_PATTERNS) for path in paths)
 
 
+def docs_only(pr: dict) -> bool:
+    paths = [node["path"] for node in pr["files"]["nodes"]]
+    return bool(paths) and all(path.endswith(".md") for path in paths)
+
+
+def latest_commit_meta(pr: dict) -> Dict[str, Any]:
+    nodes = pr.get("latestCommit", {}).get("nodes", [])
+    if not nodes:
+        return {}
+    commit = nodes[0]["commit"]
+    authors = commit.get("authors", {}).get("nodes", [])
+    author = authors[0] if authors else {}
+    user = author.get("user") or {}
+    return {
+        "oid": commit.get("oid"),
+        "committed_at": commit.get("committedDate"),
+        "author_login": user.get("login"),
+        "author_name": author.get("name"),
+        "author_email": author.get("email"),
+    }
+
+
+def stale_actionable_tasks(pr: dict) -> List[dict]:
+    tasks: List[dict] = []
+    seen = set()
+    for thread in pr["reviewThreads"]["nodes"]:
+        if not thread["isOutdated"]:
+            continue
+        comments = thread["comments"]["nodes"]
+        copilot_comments = [comment for comment in comments if is_copilot_author(comment["author"]["login"])]
+        if not copilot_comments:
+            continue
+        latest = copilot_comments[-1]
+        line = latest.get("line") or latest.get("originalLine") or 0
+        summary = strip_markdown(latest["body"])
+        key = (thread["path"], str(line), summary)
+        if key in seen:
+            continue
+        seen.add(key)
+        tasks.append(
+            {
+                "path": thread["path"],
+                "line": int(line) if line else 0,
+                "summary": summary,
+                "created_at": latest.get("createdAt"),
+                "source_url": latest["url"],
+            }
+        )
+    return tasks
+
+
+def human_followup_ready(pr: dict, summary: dict) -> Tuple[bool, Optional[str]]:
+    if summary["fresh_copilot_review"]:
+        return False, None
+    if summary["actionable_tasks"] or summary["advisory_tasks"] or summary["high_risk_paths"]:
+        return False, None
+    if not low_risk_only(pr) or not docs_only(pr):
+        return False, None
+
+    stale_tasks = stale_actionable_tasks(pr)
+    if not stale_tasks:
+        return False, None
+
+    latest_commit = latest_commit_meta(pr)
+    if not latest_commit:
+        return False, None
+
+    if is_bot_identity(
+        latest_commit.get("author_login"),
+        latest_commit.get("author_name"),
+        latest_commit.get("author_email"),
+    ):
+        return False, None
+
+    latest_commit_time = parse_timestamp(latest_commit.get("committed_at"))
+    latest_actionable_time = max(
+        (parse_timestamp(task.get("created_at")) for task in stale_tasks if task.get("created_at")),
+        default=None,
+    )
+    if not latest_commit_time or not latest_actionable_time:
+        return False, None
+    if latest_commit_time <= latest_actionable_time:
+        return False, None
+
+    return (
+        True,
+        "Current head is a human docs-only follow-up commit created after the latest stale Copilot actionable feedback.",
+    )
+
+
 def summarize_status_contexts(pr: dict) -> Tuple[bool, List[str]]:
     failures: List[str] = []
     contexts = pr["statusCheckRollup"]["contexts"]["nodes"] if pr.get("statusCheckRollup") else []
@@ -414,10 +543,22 @@ def render_task_line(task: dict) -> str:
 def build_intake_summary(pr: dict) -> dict:
     actionable, advisory, fresh = collect_review_tasks(pr)
     high_risk = risk_paths(pr)
+    followup_ready, followup_reason = human_followup_ready(
+        pr,
+        {
+            "fresh_copilot_review": fresh,
+            "actionable_tasks": actionable,
+            "advisory_tasks": advisory,
+            "high_risk_paths": high_risk,
+        },
+    )
 
     if actionable:
         status = "ACTIONABLE"
         summary = "Actionable AI review feedback is still open."
+    elif followup_ready:
+        status = "FOLLOWUP_READY"
+        summary = "Fresh Copilot review is missing, but this looks like a human follow-up commit that addressed the latest actionable Copilot feedback in a docs-only PR."
     elif high_risk or advisory or not fresh:
         status = "MANUAL_REVIEW"
         summary = "Manual review is still required before merge."
@@ -432,6 +573,8 @@ def build_intake_summary(pr: dict) -> dict:
         "head_oid": pr["headRefOid"],
         "head_ref": pr["headRefName"],
         "fresh_copilot_review": fresh,
+        "human_followup_ready": followup_ready,
+        "human_followup_reason": followup_reason,
         "high_risk_paths": high_risk,
         "actionable_tasks": actionable,
         "advisory_tasks": advisory,
@@ -446,6 +589,7 @@ def intake_comment_body(pr: dict, summary: dict) -> str:
         f"- Status: `{summary['status']}`",
         f"- Head commit: `{summary['head_oid'][:12]}`",
         f"- Fresh Copilot review on current head: `{summary['fresh_copilot_review']}`",
+        f"- Human follow-up exception candidate: `{summary.get('human_followup_ready', False)}`",
         f"- Actionable tasks: `{len(summary['actionable_tasks'])}`",
         f"- Advisory tasks: `{len(summary['advisory_tasks'])}`",
         "",
@@ -466,6 +610,11 @@ def intake_comment_body(pr: dict, summary: dict) -> str:
     if summary["high_risk_paths"]:
         lines.append("### High-Risk Paths")
         lines.extend(f"- `{path}`" for path in summary["high_risk_paths"])
+        lines.append("")
+
+    if summary.get("human_followup_reason"):
+        lines.append("### Follow-up Exception")
+        lines.append(f"- {summary['human_followup_reason']}")
         lines.append("")
 
     lines.extend(
@@ -541,6 +690,7 @@ def merge_comment_body(pr: dict, evaluation: dict) -> str:
         "",
         f"- Eligible: `{evaluation['eligible']}`",
         f"- Requested: `{evaluation['requested']}`",
+        f"- Human follow-up exception used: `{evaluation.get('human_followup_exception_used', False)}`",
         f"- Head commit: `{pr['headRefOid'][:12]}`",
         "",
     ]
@@ -564,6 +714,7 @@ def evaluate_safe_merge(repo: str, pr: dict, summary: dict) -> dict:
     checks_ok, failures = summarize_status_contexts(pr)
     requested = "safe-auto-merge" in labels
     reasons: List[str] = []
+    followup_exception_used = bool(summary.get("human_followup_ready"))
 
     if not requested:
         reasons.append("`safe-auto-merge` label is not present.")
@@ -577,7 +728,7 @@ def evaluate_safe_merge(repo: str, pr: dict, summary: dict) -> dict:
         reasons.append("Required checks are not green: " + ", ".join(failures))
     if summary["head_oid"] != pr["headRefOid"]:
         reasons.append("Review intake report is stale for the current head commit.")
-    if not summary["fresh_copilot_review"]:
+    if not summary["fresh_copilot_review"] and not followup_exception_used:
         reasons.append("No fresh Copilot review exists for the current head commit.")
     if summary["actionable_tasks"]:
         reasons.append("Actionable AI review tasks are still open.")
@@ -597,6 +748,7 @@ def evaluate_safe_merge(repo: str, pr: dict, summary: dict) -> dict:
         "requested": requested,
         "eligible": not reasons,
         "reasons": reasons,
+        "human_followup_exception_used": followup_exception_used,
     }
 
 
@@ -637,7 +789,7 @@ def handle_intake(args: argparse.Namespace) -> int:
 
 def handle_fix_prompt(args: argparse.Namespace) -> int:
     pr = load_pr(args.repo, args.pr)
-    summary = extract_intake_data(pr) or build_intake_summary(pr)
+    summary = build_intake_summary(pr)
     body = build_fix_prompt(pr, summary)
     if args.post:
         rest("POST", args.repo, f"/issues/{args.pr}/comments", {"body": body})
@@ -648,7 +800,7 @@ def handle_fix_prompt(args: argparse.Namespace) -> int:
 
 def handle_merge_check(args: argparse.Namespace) -> int:
     pr = load_pr(args.repo, args.pr)
-    summary = extract_intake_data(pr) or build_intake_summary(pr)
+    summary = build_intake_summary(pr)
     evaluation = evaluate_safe_merge(args.repo, pr, summary)
     body = merge_comment_body(pr, evaluation)
 
