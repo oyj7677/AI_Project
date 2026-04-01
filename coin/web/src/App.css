@@ -75,6 +75,30 @@
   min-width: 220px;
 }
 
+.live-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+  width: 100%;
+}
+
+.live-controls-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.refresh-interval {
+  width: 160px;
+  border-radius: 14px;
+  border: 1px solid var(--input-border);
+  background: rgba(255, 255, 255, 0.78);
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--text-primary);
+}
+
 .refresh-button,
 .range-button,
 .market-row {
@@ -349,6 +373,7 @@
     linear-gradient(180deg, rgba(6, 15, 29, 0.9), rgba(15, 26, 45, 0.88)),
     rgba(10, 18, 30, 0.92);
   color: white;
+  position: relative;
 }
 
 .chart-svg {
@@ -388,6 +413,51 @@
   fill: #65f3ff;
   stroke: rgba(255, 255, 255, 0.8);
   stroke-width: 3;
+}
+
+.hover-dot {
+  fill: #f8fbff;
+  stroke: #65f3ff;
+  stroke-width: 3;
+}
+
+.crosshair-line {
+  stroke: rgba(255, 255, 255, 0.22);
+  stroke-width: 1;
+  stroke-dasharray: 6 6;
+}
+
+.crosshair-line.horizontal {
+  stroke: rgba(101, 243, 255, 0.22);
+}
+
+.chart-hitbox {
+  cursor: crosshair;
+}
+
+.chart-tooltip {
+  position: absolute;
+  top: 26px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(9, 18, 32, 0.92);
+  border: 1px solid rgba(101, 243, 255, 0.25);
+  box-shadow: 0 12px 24px rgba(4, 12, 24, 0.35);
+  pointer-events: none;
+}
+
+.chart-tooltip strong {
+  font-size: 0.96rem;
+}
+
+.chart-tooltip span {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.74);
 }
 
 .chart-meta {
@@ -482,6 +552,10 @@
   .hero-actions {
     align-items: flex-start;
     min-width: auto;
+  }
+
+  .live-controls {
+    align-items: flex-start;
   }
 
   .metrics-grid {

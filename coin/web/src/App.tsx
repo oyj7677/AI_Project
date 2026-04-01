@@ -5,22 +5,33 @@ import { PriceChart } from './components/PriceChart'
 import { useMarketDashboard } from './hooks/useMarketDashboard'
 import { formatCompactCurrency, formatCurrency, formatPercent } from './lib/format'
 
+const refreshOptions = [
+  { label: '꺼짐', value: 0 },
+  { label: '5초', value: 5000 },
+  { label: '15초', value: 15000 },
+  { label: '30초', value: 30000 },
+]
+
 function App() {
   const {
     chartData,
     chartError,
     chartRange,
     favoriteCodes,
+    isLivePolling,
+    isPageVisible,
     isChartLoading,
     isMarketLoading,
     lastUpdatedLabel,
     marketError,
     marketList,
     marketSort,
+    refreshIntervalMs,
     refreshAll,
     selectedMarket,
     selectMarket,
     setChartRange,
+    setRefreshIntervalMs,
     setMarketSort,
     toggleFavorite,
   } = useMarketDashboard()
@@ -29,7 +40,7 @@ function App() {
     <main className="app-shell">
       <section className="hero-panel">
         <div>
-          <p className="eyebrow">Phase 1</p>
+          <p className="eyebrow">Phase 2</p>
           <h1>Crypto Market Board</h1>
           <p className="hero-copy">
             자동매매 시스템의 첫 화면으로, 종목을 훑고 가격 흐름을 빠르게
@@ -41,6 +52,30 @@ function App() {
           <button className="refresh-button" onClick={() => void refreshAll()}>
             데이터 새로고침
           </button>
+          <div className="live-controls">
+            <label className="live-controls-label" htmlFor="refresh-interval">
+              실시간 갱신 방식
+            </label>
+            <select
+              className="refresh-interval"
+              id="refresh-interval"
+              value={refreshIntervalMs}
+              onChange={(event) => setRefreshIntervalMs(Number(event.target.value))}
+            >
+              {refreshOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <p className="status-note">
+              {isLivePolling
+                ? isPageVisible
+                  ? `Polling ${refreshIntervalMs / 1000}초`
+                  : '백그라운드 탭에서 자동 갱신 일시 중지'
+                : '자동 갱신 꺼짐'}
+            </p>
+          </div>
           <p className="status-note">
             {lastUpdatedLabel
               ? `마지막 갱신 ${lastUpdatedLabel}`
@@ -81,7 +116,7 @@ function App() {
                     : '종목을 고르는 중'}
                 </h2>
                 <p className="market-subtitle">
-                  {selectedMarket?.englishName ?? 'Upbit 공개 시세를 불러옵니다.'}
+                  {selectedMarket?.englishName ?? '시장 데이터 API를 불러옵니다.'}
                 </p>
                 {favoriteCodes.includes(selectedMarket?.market ?? '') ? (
                   <p className="market-subtitle">관심 종목으로 고정됨</p>
@@ -160,10 +195,10 @@ function App() {
 
           <article className="panel footnote-panel">
             <p>
-              현재 1차 구현은 Upbit 공개 시세를 기준으로 동작합니다. 브라우저
-              CORS 제한 때문에 프론트에서는 <code>/api/upbit</code> 프록시
-              경로를 사용하며, 운영 배포 시에는 동일한 역할의 얇은 백엔드
-              프록시가 필요합니다.
+              현재 2차 구현은 프론트가 거래소 경로를 직접 호출하지 않고{' '}
+              <code>/api/markets</code> 계약만 사용합니다. 운영 배포에서는
+              `coin/proxy`와 동일한 책임의 API 프록시를 붙이면 프론트
+              기술스택과 백엔드 구현을 독립적으로 바꿀 수 있습니다.
             </p>
           </article>
         </section>

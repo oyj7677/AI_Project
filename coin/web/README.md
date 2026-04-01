@@ -14,17 +14,25 @@
 ## 실행 방법
 
 ```bash
+cd coin/proxy
+npm install
+npm run dev
+```
+
+다른 터미널에서:
+
+```bash
 cd coin/web
 npm install
 npm run dev
 ```
 
-기본 개발 서버는 Vite 프록시를 통해 Upbit 공개 시세 API를 `/api/upbit` 경로로 호출합니다.
+기본 개발 서버는 Vite 프록시를 통해 로컬 `coin/proxy`의 `/api` 계약을 호출합니다.
 
 운영 환경에서는 `.env` 또는 배포 환경 변수로 아래 값을 주입할 수 있습니다.
 
 ```bash
-VITE_UPBIT_API_BASE=https://your-proxy.example.com/api/upbit
+VITE_MARKET_API_BASE=https://your-proxy.example.com/api
 ```
 
 ## 검증
@@ -38,5 +46,5 @@ npm run test
 ## 주의
 
 - Upbit 공개 시세는 브라우저 CORS 직결이 안정적이지 않으므로, 현재 구현은 Vite 개발 프록시에 의존합니다.
-- 운영 배포 시에는 동일한 역할의 얇은 백엔드 프록시가 필요합니다.
+- 운영 배포 시에는 `coin/proxy`와 동일한 책임의 얇은 백엔드 프록시가 필요합니다.
 - 프론트는 `MarketDataGateway` 계약에만 의존하고, Upbit 연동은 교체 가능한 어댑터 구현으로 분리되어 있습니다.

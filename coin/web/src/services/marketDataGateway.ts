@@ -1,7 +1,7 @@
 import type { MarketDataGateway } from '../contracts/marketData'
-import { fetchChartPoints, fetchDashboardMarkets } from '../lib/upbit'
+import { fetchMarketChart, fetchMarkets } from '../lib/marketApi'
 
 export const marketDataGateway: MarketDataGateway = {
-  fetchMarkets: fetchDashboardMarkets,
-  fetchChartPoints,
+  fetchMarkets,
+  fetchChartPoints: fetchMarketChart,
 }
