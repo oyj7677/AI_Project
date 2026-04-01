@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { marketDataGateway } from '../services/marketDataGateway'
 import type {
   ChartPoint,
@@ -11,6 +11,7 @@ import type {
 const DEFAULT_RANGE: ChartRange = '1D'
 const DEFAULT_SORT: MarketSort = 'volume'
 const FAVORITES_STORAGE_KEY = 'coin-market-favorites'
+const DEFAULT_REFRESH_INTERVAL_MS = 15000
 
 function asMessage(error: unknown) {
   if (error instanceof Error) {
@@ -25,6 +26,9 @@ export function useMarketDashboard() {
   const [selectedMarketCode, setSelectedMarketCode] = useState<string | null>(null)
   const [chartRange, setChartRange] = useState<ChartRange>(DEFAULT_RANGE)
   const [marketSort, setMarketSort] = useState<MarketSort>(DEFAULT_SORT)
+  const [refreshIntervalMs, setRefreshIntervalMs] = useState(
+    DEFAULT_REFRESH_INTERVAL_MS,
+  )
   const [chartData, setChartData] = useState<ChartPoint[]>([])
   const [isMarketLoading, setIsMarketLoading] = useState(true)
   const [isChartLoading, setIsChartLoading] = useState(false)
@@ -32,7 +36,11 @@ export function useMarketDashboard() {
   const [chartError, setChartError] = useState<string | null>(null)
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null)
   const [favoriteCodes, setFavoriteCodes] = useState<string[]>([])
+  const [isPageVisible, setIsPageVisible] = useState(
+    typeof document === 'undefined' ? true : document.visibilityState === 'visible',
+  )
   const chartRequestIdRef = useRef(0)
+  const pollingInFlightRef = useRef(false)
 
   useEffect(() => {
     try {
@@ -47,6 +55,17 @@ export function useMarketDashboard() {
       }
     } catch {
       // Ignore malformed local storage and keep defaults.
+    }
+  }, [])
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsPageVisible(document.visibilityState === 'visible')
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [])
 
@@ -79,8 +98,10 @@ export function useMarketDashboard() {
       }),
     )
 
-  async function refreshMarkets() {
-    setIsMarketLoading(true)
+  async function refreshMarkets(options: { silent?: boolean } = {}) {
+    if (!options.silent) {
+      setIsMarketLoading(true)
+    }
     setMarketError(null)
 
     try {
@@ -97,19 +118,26 @@ export function useMarketDashboard() {
         nextSelectedMarketCode = nextMarkets[0]?.market ?? null
         return nextSelectedMarketCode
       })
-      setLastUpdatedAt(Date.now())
       return nextSelectedMarketCode
     } catch (error) {
       setMarketError(asMessage(error))
       return null
     } finally {
-      setIsMarketLoading(false)
+      if (!options.silent) {
+        setIsMarketLoading(false)
+      }
     }
   }
 
-  async function refreshChart(marketCode: string, range: ChartRange) {
+  async function refreshChart(
+    marketCode: string,
+    range: ChartRange,
+    options: { silent?: boolean } = {},
+  ) {
     const requestId = ++chartRequestIdRef.current
-    setIsChartLoading(true)
+    if (!options.silent) {
+      setIsChartLoading(true)
+    }
     setChartError(null)
 
     try {
@@ -118,24 +146,31 @@ export function useMarketDashboard() {
         return
       }
       setChartData(nextChartData)
+      setLastUpdatedAt(Date.now())
     } catch (error) {
       if (requestId !== chartRequestIdRef.current) {
         return
       }
       setChartError(asMessage(error))
     } finally {
-      if (requestId === chartRequestIdRef.current) {
+      if (requestId === chartRequestIdRef.current && !options.silent) {
         setIsChartLoading(false)
       }
     }
   }
 
-  async function refreshAll() {
-    const nextSelectedMarketCode = await refreshMarkets()
+  async function refreshAll(options: { silent?: boolean } = {}) {
+    const nextSelectedMarketCode = await refreshMarkets(options)
     if (nextSelectedMarketCode) {
-      await refreshChart(nextSelectedMarketCode, chartRange)
+      await refreshChart(nextSelectedMarketCode, chartRange, options)
     }
   }
+
+  const runRefreshAll = useEffectEvent(
+    async (options: { silent?: boolean } = {}) => {
+      await refreshAll(options)
+    },
+  )
 
   useEffect(() => {
     void refreshMarkets()
@@ -149,11 +184,34 @@ export function useMarketDashboard() {
     void refreshChart(selectedMarketCode, chartRange)
   }, [selectedMarketCode, chartRange])
 
+  useEffect(() => {
+    if (!selectedMarketCode || refreshIntervalMs === 0 || !isPageVisible) {
+      return
+    }
+
+    const intervalId = window.setInterval(() => {
+      if (pollingInFlightRef.current) {
+        return
+      }
+
+      pollingInFlightRef.current = true
+      void runRefreshAll({ silent: true }).finally(() => {
+        pollingInFlightRef.current = false
+      })
+    }, refreshIntervalMs)
+
+    return () => {
+      window.clearInterval(intervalId)
+    }
+  }, [chartRange, isPageVisible, refreshIntervalMs, selectedMarketCode])
+
   return {
     chartData,
     chartError,
     chartRange,
     favoriteCodes,
+    isLivePolling: refreshIntervalMs > 0,
+    isPageVisible,
     isChartLoading,
     isMarketLoading,
     lastUpdatedLabel: lastUpdatedAt
@@ -168,10 +226,12 @@ export function useMarketDashboard() {
     marketError,
     marketList,
     marketSort,
+    refreshIntervalMs,
     refreshAll,
     selectedMarket,
     selectMarket: setSelectedMarketCode,
     setChartRange,
+    setRefreshIntervalMs,
     setMarketSort,
     toggleFavorite: (marketCode: string) => {
       setFavoriteCodes((current) => {

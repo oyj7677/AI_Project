@@ -1,4 +1,6 @@
-import { chartRanges } from '../lib/upbit'
+import { useMemo, useState } from 'react'
+import { buildChartGeometry, getNearestPointIndex } from '../lib/chartMath'
+import { chartRanges } from '../lib/chartRanges'
 import { formatCurrency, formatShortDateTime } from '../lib/format'
 import type { ChartPoint, ChartRange } from '../types/market'
 
@@ -11,50 +13,6 @@ interface PriceChartProps {
   range: ChartRange
 }
 
-function buildLinePath(data: ChartPoint[]) {
-  if (data.length === 0) {
-    return null
-  }
-
-  const width = 760
-  const height = 320
-  const padding = 22
-  const prices = data.map((point) => point.close)
-  const min = Math.min(...prices)
-  const max = Math.max(...prices)
-  const span = Math.max(max - min, 1)
-
-  const points = data.map((point, index) => {
-    const x =
-      padding +
-      (index / Math.max(data.length - 1, 1)) * (width - padding * 2)
-    const y =
-      height -
-      padding -
-      ((point.close - min) / span) * (height - padding * 2)
-
-    return { x, y }
-  })
-
-  const line = points
-    .map((point, index) =>
-      `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`,
-    )
-    .join(' ')
-
-  const area = `${line} L ${points.at(-1)?.x ?? padding} ${height - padding} L ${points[0]?.x ?? padding} ${height - padding} Z`
-
-  return {
-    area,
-    height,
-    line,
-    max,
-    min,
-    points,
-    width,
-  }
-}
-
 export function PriceChart({
   data,
   error,
@@ -63,7 +21,19 @@ export function PriceChart({
   onRangeChange,
   range,
 }: PriceChartProps) {
-  const chart = buildLinePath(data)
+  const [activeIndex, setActiveIndex] = useState<number | null>(null)
+  const chart = useMemo(() => buildChartGeometry(data), [data])
+  const effectiveIndex =
+    activeIndex === null ? Math.max(data.length - 1, 0) : activeIndex
+  const activePoint = data[effectiveIndex]
+  const activeCoordinates = chart?.points[effectiveIndex]
+
+  function updateActiveIndex(pointerX: number) {
+    if (!chart) {
+      return
+    }
+    setActiveIndex(getNearestPointIndex(chart, pointerX))
+  }
 
   return (
     <>
@@ -96,7 +66,28 @@ export function PriceChart({
         </div>
       </header>
 
-      <div className="chart-card">
+      <div
+        className="chart-card"
+        onBlur={() => setActiveIndex(null)}
+        onKeyDown={(event) => {
+          if (!chart || data.length === 0) {
+            return
+          }
+
+          if (event.key === 'ArrowLeft') {
+            event.preventDefault()
+            setActiveIndex((current) => Math.max((current ?? data.length - 1) - 1, 0))
+          }
+
+          if (event.key === 'ArrowRight') {
+            event.preventDefault()
+            setActiveIndex((current) =>
+              Math.min((current ?? data.length - 1) + 1, data.length - 1),
+            )
+          }
+        }}
+        tabIndex={0}
+      >
         {isLoading ? (
           <div className="empty-state">
             <p>차트 데이터를 불러오는 중입니다.</p>
@@ -144,13 +135,70 @@ export function PriceChart({
 
               <path className="area-fill" d={chart.area} />
               <path className="price-line" d={chart.line} />
+              {activeCoordinates ? (
+                <>
+                  <line
+                    className="crosshair-line"
+                    x1={activeCoordinates.x}
+                    x2={activeCoordinates.x}
+                    y1="0"
+                    y2={chart.height}
+                  />
+                  <line
+                    className="crosshair-line horizontal"
+                    x1="0"
+                    x2={chart.width}
+                    y1={activeCoordinates.y}
+                    y2={activeCoordinates.y}
+                  />
+                </>
+              ) : null}
               <circle
                 className="last-dot"
                 cx={chart.points.at(-1)?.x ?? 0}
                 cy={chart.points.at(-1)?.y ?? 0}
                 r="7"
               />
+              {activeCoordinates ? (
+                <circle
+                  className="hover-dot"
+                  cx={activeCoordinates.x}
+                  cy={activeCoordinates.y}
+                  r="8"
+                />
+              ) : null}
+              <rect
+                className="chart-hitbox"
+                fill="transparent"
+                height={chart.height}
+                onMouseLeave={() => setActiveIndex(null)}
+                onMouseMove={(event) => {
+                  const bounds = event.currentTarget.getBoundingClientRect()
+                  const pointerX =
+                    ((event.clientX - bounds.left) / bounds.width) * chart.width
+                  updateActiveIndex(pointerX)
+                }}
+                width={chart.width}
+                x="0"
+                y="0"
+              />
             </svg>
+
+            {activePoint && activeCoordinates ? (
+              <div
+                className="chart-tooltip"
+                style={{
+                  left: `${Math.min(
+                    Math.max((activeCoordinates.x / chart.width) * 100, 14),
+                    86,
+                  )}%`,
+                }}
+              >
+                <strong>{formatCurrency(activePoint.close)}</strong>
+                <span>{formatShortDateTime(activePoint.timestamp)}</span>
+                <span>거래량 {activePoint.volume.toFixed(2)}</span>
+              </div>
+            ) : null}
 
             <div className="chart-meta">
               <span>저점 {formatCurrency(chart.min)}</span>
@@ -158,6 +206,7 @@ export function PriceChart({
             </div>
 
             <div className="legend-row">
+              <span>좌우 화살표로 포인트 탐색 가능</span>
               <span>
                 <span className="legend-bullet"></span>
                 {data.length > 0
@@ -167,10 +216,8 @@ export function PriceChart({
                   : '데이터 없음'}
               </span>
               <span>
-                마지막 체결가{' '}
-                {data.length > 0
-                  ? formatCurrency(data.at(-1)?.close ?? 0)
-                  : '-'}
+                현재 선택값{' '}
+                {activePoint ? formatCurrency(activePoint.close) : '-'}
               </span>
             </div>
           </>

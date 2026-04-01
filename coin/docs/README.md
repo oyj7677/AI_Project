@@ -8,6 +8,7 @@
 - [ADR - Coin Market Screen Architecture](./ADR-2026-04-01-coin-market-screen-arch.md)
 - [TRD - Coin Market Screen](./TRD-2026-04-01-coin-market-screen.md)
 - [Implementation Status](./IMPLEMENTATION_STATUS.md)
+- [Phase 2 Plan](./PHASE2_PLAN.md)
 
 ## Templates
 

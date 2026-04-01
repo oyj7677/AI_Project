@@ -15,10 +15,10 @@
 
 ## 현재 상태
 
-- 현재 단계: `coin/web 기준 구조 확정 및 2차 리팩터링 완료`
-- 현재 PR: `재생성 예정`
-- PR 상태: `기존 PR #5를 supersede 할 새 PR 생성 예정`
-- 체크 상태: `coin/web 기준 로컬 test / build / lint 통과`
+- 현재 단계: `Phase 2 기능 구현 완료, PR 생성 준비`
+- 현재 PR: `생성 예정`
+- PR 상태: `구현/검증 완료`
+- 체크 상태: `coin/web test / build / lint, coin/proxy test 통과`
 
 ## 현재까지 구현된 것
 
@@ -54,6 +54,16 @@
 - 관심 종목 고정 기능 추가
 - 접근성 보강
 
+### Phase 2 구현 완료 항목
+
+- 차트 hover 툴팁 및 crosshair
+- 키보드 기반 차트 포인트 탐색
+- polling 기반 실시간 업데이트 방식 결정 및 구현
+- 자동 갱신 주기 선택
+- 백그라운드 탭 polling 일시 중지
+- 운영용 `coin/proxy` API 프록시 스캐폴드
+- 프론트가 거래소 경로 대신 앱 전용 `/api` 계약만 사용하도록 전환
+
 ## 현재 구현 위치
 
 - 문서: `coin/docs`
@@ -69,9 +79,9 @@
 
 ### 바로 다음
 
-1. `coin/web` 기준 re-PR 생성
-2. re-PR 리뷰 확인 및 머지
-3. 기존 PR `#5` superseded 처리
+1. Phase 2 PR 생성
+2. Copilot 리뷰 확인 및 후속 리팩터링
+3. PR 머지
 
 ### 2차 구현 후보
 
