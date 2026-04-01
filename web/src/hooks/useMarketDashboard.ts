@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { fetchChartPoints, fetchDashboardMarkets } from '../lib/upbit'
 import type { ChartPoint, ChartRange, DashboardMarket } from '../types/market'
 
@@ -23,10 +23,8 @@ export function useMarketDashboard() {
   const [chartError, setChartError] = useState<string | null>(null)
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null)
 
-  const selectedMarket = useMemo(
-    () => markets.find((market) => market.market === selectedMarketCode) ?? null,
-    [markets, selectedMarketCode],
-  )
+  const selectedMarket =
+    markets.find((market) => market.market === selectedMarketCode) ?? null
 
   async function refreshMarkets() {
     setIsMarketLoading(true)
@@ -34,17 +32,23 @@ export function useMarketDashboard() {
 
     try {
       const nextMarkets = await fetchDashboardMarkets()
+      let nextSelectedMarketCode: string | null = null
+
       setMarkets(nextMarkets)
       setSelectedMarketCode((current) => {
         if (current && nextMarkets.some((market) => market.market === current)) {
+          nextSelectedMarketCode = current
           return current
         }
 
-        return nextMarkets[0]?.market ?? null
+        nextSelectedMarketCode = nextMarkets[0]?.market ?? null
+        return nextSelectedMarketCode
       })
       setLastUpdatedAt(Date.now())
+      return nextSelectedMarketCode
     } catch (error) {
       setMarketError(asMessage(error))
+      return null
     } finally {
       setIsMarketLoading(false)
     }
@@ -65,9 +69,9 @@ export function useMarketDashboard() {
   }
 
   async function refreshAll() {
-    await refreshMarkets()
-    if (selectedMarketCode) {
-      await refreshChart(selectedMarketCode, chartRange)
+    const nextSelectedMarketCode = await refreshMarkets()
+    if (nextSelectedMarketCode) {
+      await refreshChart(nextSelectedMarketCode, chartRange)
     }
   }
 
