@@ -1,4 +1,5 @@
 export type ChartRange = '1H' | '4H' | '1D' | '1W'
+export type MarketSort = 'volume' | 'change' | 'name'
 
 export interface DashboardMarket {
   market: string
@@ -10,6 +11,10 @@ export interface DashboardMarket {
   accTradePrice24h: number
   highPrice: number
   lowPrice: number
+}
+
+export interface MarketListItem extends DashboardMarket {
+  isFavorite: boolean
 }
 
 export interface ChartPoint {

@@ -10,15 +10,19 @@ function App() {
     chartData,
     chartError,
     chartRange,
+    favoriteCodes,
     isChartLoading,
     isMarketLoading,
     lastUpdatedLabel,
     marketError,
-    markets,
+    marketList,
+    marketSort,
     refreshAll,
     selectedMarket,
     selectMarket,
     setChartRange,
+    setMarketSort,
+    toggleFavorite,
   } = useMarketDashboard()
 
   return (
@@ -57,9 +61,12 @@ function App() {
           <MarketList
             error={marketError}
             isLoading={isMarketLoading}
-            markets={markets}
+            marketSort={marketSort}
+            markets={marketList}
             selectedMarketCode={selectedMarket?.market ?? null}
             onSelect={selectMarket}
+            onSortChange={setMarketSort}
+            onToggleFavorite={toggleFavorite}
           />
         </aside>
 
@@ -76,6 +83,9 @@ function App() {
                 <p className="market-subtitle">
                   {selectedMarket?.englishName ?? 'Upbit 공개 시세를 불러옵니다.'}
                 </p>
+                {favoriteCodes.includes(selectedMarket?.market ?? '') ? (
+                  <p className="market-subtitle">관심 종목으로 고정됨</p>
+                ) : null}
               </div>
 
               {selectedMarket ? (

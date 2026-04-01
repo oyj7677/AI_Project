@@ -77,9 +77,14 @@ export function PriceChart({
           </p>
         </div>
 
-        <div className="range-buttons">
+        <div
+          aria-label="차트 시간 범위 선택"
+          className="range-buttons"
+          role="group"
+        >
           {chartRanges.map((option) => (
             <button
+              aria-pressed={option.value === range}
               className={`range-button ${option.value === range ? 'active' : ''}`}
               key={option.value}
               onClick={() => onRangeChange(option.value)}

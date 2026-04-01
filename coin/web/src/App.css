@@ -132,6 +132,15 @@
   margin: 18px 0 14px;
 }
 
+.market-search-label,
+.market-sort-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
 .market-search {
   width: 100%;
   border-radius: 16px;
@@ -146,6 +155,17 @@
 .market-search:focus {
   outline: 2px solid rgba(18, 182, 255, 0.2);
   border-color: var(--accent-strong);
+}
+
+.market-sort {
+  width: 100%;
+  margin-top: 12px;
+  border-radius: 16px;
+  border: 1px solid var(--input-border);
+  background: rgba(255, 255, 255, 0.74);
+  padding: 12px 14px;
+  font: inherit;
+  color: var(--text-primary);
 }
 
 .market-list {
@@ -163,7 +183,6 @@
   border-radius: 18px;
   padding: 14px 14px 12px;
   text-align: left;
-  cursor: pointer;
 }
 
 .market-row:hover {
@@ -178,6 +197,7 @@
 
 .market-row-top,
 .market-row-bottom,
+.market-select,
 .metric-label,
 .metric-value,
 .chart-meta,
@@ -186,6 +206,32 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.market-select {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+}
+
+.favorite-toggle {
+  border: 1px solid rgba(127, 153, 186, 0.22);
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--text-subtle);
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.favorite-toggle.active {
+  color: #f9a826;
+  border-color: rgba(249, 168, 38, 0.3);
+  background: rgba(249, 168, 38, 0.12);
 }
 
 .market-code {
@@ -416,7 +462,7 @@
 
 @media (max-width: 760px) {
   .app-shell {
-    width: min(100vw - 20px, 100%);
+    width: min(calc(100vw - 20px), 100%);
     padding-top: 14px;
   }
 

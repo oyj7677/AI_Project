@@ -8,19 +8,35 @@ const RANGE_CONFIG: Record<
 > = {
   '1H': {
     label: '1시간',
-    path: (market) => `/v1/candles/minutes/1?market=${market}&count=60`,
+    path: (market) =>
+      `/v1/candles/minutes/1?${new URLSearchParams({
+        market,
+        count: '60',
+      }).toString()}`,
   },
   '4H': {
     label: '4시간',
-    path: (market) => `/v1/candles/minutes/5?market=${market}&count=48`,
+    path: (market) =>
+      `/v1/candles/minutes/5?${new URLSearchParams({
+        market,
+        count: '48',
+      }).toString()}`,
   },
   '1D': {
     label: '1일',
-    path: (market) => `/v1/candles/minutes/30?market=${market}&count=48`,
+    path: (market) =>
+      `/v1/candles/minutes/30?${new URLSearchParams({
+        market,
+        count: '48',
+      }).toString()}`,
   },
   '1W': {
     label: '1주',
-    path: (market) => `/v1/candles/minutes/240?market=${market}&count=42`,
+    path: (market) =>
+      `/v1/candles/minutes/240?${new URLSearchParams({
+        market,
+        count: '42',
+      }).toString()}`,
   },
 }
 
@@ -71,9 +87,11 @@ export function chunk<T>(items: T[], size: number) {
 async function fetchTickers(markets: string[]) {
   const groups = chunk(markets, 80)
   const responses = await Promise.all(
-    groups.map((group) =>
-      fetchJson<UpbitTicker[]>(`/v1/ticker?markets=${group.join(',')}`),
-    ),
+    groups.map((group) => {
+      const params = new URLSearchParams()
+      params.set('markets', group.join(','))
+      return fetchJson<UpbitTicker[]>(`/v1/ticker?${params.toString()}`)
+    }),
   )
 
   return responses.flat()
