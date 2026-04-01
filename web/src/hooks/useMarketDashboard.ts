@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { fetchChartPoints, fetchDashboardMarkets } from '../lib/upbit'
 import type { ChartPoint, ChartRange, DashboardMarket } from '../types/market'
 
@@ -22,6 +22,7 @@ export function useMarketDashboard() {
   const [marketError, setMarketError] = useState<string | null>(null)
   const [chartError, setChartError] = useState<string | null>(null)
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null)
+  const chartRequestIdRef = useRef(0)
 
   const selectedMarket =
     markets.find((market) => market.market === selectedMarketCode) ?? null
@@ -55,16 +56,25 @@ export function useMarketDashboard() {
   }
 
   async function refreshChart(marketCode: string, range: ChartRange) {
+    const requestId = ++chartRequestIdRef.current
     setIsChartLoading(true)
     setChartError(null)
 
     try {
       const nextChartData = await fetchChartPoints(marketCode, range)
+      if (requestId !== chartRequestIdRef.current) {
+        return
+      }
       setChartData(nextChartData)
     } catch (error) {
+      if (requestId !== chartRequestIdRef.current) {
+        return
+      }
       setChartError(asMessage(error))
     } finally {
-      setIsChartLoading(false)
+      if (requestId === chartRequestIdRef.current) {
+        setIsChartLoading(false)
+      }
     }
   }
 

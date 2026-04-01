@@ -14,7 +14,6 @@ export interface DashboardMarket {
 
 export interface ChartPoint {
   timestamp: number
-  label: string
   close: number
   open: number
   high: number

@@ -19,11 +19,18 @@ npm run dev
 
 기본 개발 서버는 Vite 프록시를 통해 Upbit 공개 시세 API를 `/api/upbit` 경로로 호출합니다.
 
+운영 환경에서는 `.env` 또는 배포 환경 변수로 아래 값을 주입할 수 있습니다.
+
+```bash
+VITE_UPBIT_API_BASE=https://your-proxy.example.com/api/upbit
+```
+
 ## 검증
 
 ```bash
 npm run lint
 npm run build
+npm run test
 ```
 
 ## 주의

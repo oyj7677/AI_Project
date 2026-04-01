@@ -19,7 +19,7 @@ export function formatPercent(value: number) {
   return `${sign}${(value * 100).toFixed(2)}%`
 }
 
-export function formatShortDateTime(value: string) {
+export function formatShortDateTime(value: number) {
   const date = new Date(value)
 
   return new Intl.DateTimeFormat('ko-KR', {

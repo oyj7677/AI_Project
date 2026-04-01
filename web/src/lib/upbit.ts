@@ -41,7 +41,6 @@ interface UpbitTicker {
 }
 
 interface UpbitCandle {
-  candle_date_time_kst: string
   timestamp: number
   opening_price: number
   high_price: number
@@ -59,7 +58,7 @@ async function fetchJson<T>(path: string): Promise<T> {
   return response.json() as Promise<T>
 }
 
-function chunk<T>(items: T[], size: number) {
+export function chunk<T>(items: T[], size: number) {
   const groups: T[][] = []
 
   for (let index = 0; index < items.length; index += size) {
@@ -80,10 +79,11 @@ async function fetchTickers(markets: string[]) {
   return responses.flat()
 }
 
-export async function fetchDashboardMarkets(): Promise<DashboardMarket[]> {
-  const markets = await fetchJson<UpbitMarket[]>('/v1/market/all?isDetails=false')
+export function normalizeMarkets(
+  markets: UpbitMarket[],
+  tickers: UpbitTicker[],
+): DashboardMarket[] {
   const krwMarkets = markets.filter((market) => market.market.startsWith('KRW-'))
-  const tickers = await fetchTickers(krwMarkets.map((market) => market.market))
   const tickerMap = new Map(tickers.map((ticker) => [ticker.market, ticker]))
 
   return krwMarkets
@@ -109,24 +109,35 @@ export async function fetchDashboardMarkets(): Promise<DashboardMarket[]> {
     .sort((left, right) => right.accTradePrice24h - left.accTradePrice24h)
 }
 
-export async function fetchChartPoints(
-  market: string,
-  range: ChartRange,
-): Promise<ChartPoint[]> {
-  const candles = await fetchJson<UpbitCandle[]>(RANGE_CONFIG[range].path(market))
+export async function fetchDashboardMarkets(): Promise<DashboardMarket[]> {
+  const markets = await fetchJson<UpbitMarket[]>('/v1/market/all?isDetails=false')
+  const krwMarkets = markets.filter((market) => market.market.startsWith('KRW-'))
+  const tickers = await fetchTickers(krwMarkets.map((market) => market.market))
 
+  return normalizeMarkets(markets, tickers)
+}
+
+export function normalizeCandles(candles: UpbitCandle[]): ChartPoint[] {
   return candles
     .slice()
     .reverse()
     .map((candle) => ({
       timestamp: candle.timestamp,
-      label: candle.candle_date_time_kst,
       open: candle.opening_price,
       high: candle.high_price,
       low: candle.low_price,
       close: candle.trade_price,
       volume: candle.candle_acc_trade_volume,
     }))
+}
+
+export async function fetchChartPoints(
+  market: string,
+  range: ChartRange,
+): Promise<ChartPoint[]> {
+  const candles = await fetchJson<UpbitCandle[]>(RANGE_CONFIG[range].path(market))
+
+  return normalizeCandles(candles)
 }
 
 export const chartRanges = Object.entries(RANGE_CONFIG).map(([value, config]) => ({

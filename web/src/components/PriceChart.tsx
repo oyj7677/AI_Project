@@ -156,8 +156,8 @@ export function PriceChart({
               <span>
                 <span className="legend-bullet"></span>
                 {data.length > 0
-                  ? `${formatShortDateTime(data[0].label)} ~ ${formatShortDateTime(
-                      data.at(-1)?.label ?? data[0].label,
+                  ? `${formatShortDateTime(data[0].timestamp)} ~ ${formatShortDateTime(
+                      data.at(-1)?.timestamp ?? data[0].timestamp,
                     )}`
                   : '데이터 없음'}
               </span>
