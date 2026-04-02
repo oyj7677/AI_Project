@@ -15,10 +15,10 @@
 
 ## 현재 상태
 
-- 현재 단계: `Phase 2 기능 구현 완료, PR 생성 준비`
+- 현재 단계: `Phase 3 paper trading 구현 진행 중`
 - 현재 PR: `생성 예정`
-- PR 상태: `구현/검증 완료`
-- 체크 상태: `coin/web test / build / lint, coin/proxy test 통과`
+- PR 상태: `구현/검증 진행 중`
+- 체크 상태: `coin/web test / build / lint, coin/proxy test 진행 중`
 
 ## 현재까지 구현된 것
 
@@ -64,6 +64,14 @@
 - 운영용 `coin/proxy` API 프록시 스캐폴드
 - 프론트가 거래소 경로 대신 앱 전용 `/api` 계약만 사용하도록 전환
 
+### Phase 3 진행 항목
+
+- paper portfolio 상태 모델
+- paper buy / sell engine
+- paper order history
+- paper reset
+- 주문 티켓 / 포지션 / 주문 이력 UI
+
 ## 현재 구현 위치
 
 - 문서: `coin/docs`
@@ -79,7 +87,7 @@
 
 ### 바로 다음
 
-1. Phase 2 PR 생성
+1. paper trading PR 생성
 2. Copilot 리뷰 확인 및 후속 리팩터링
 3. PR 머지
 
@@ -93,10 +101,10 @@
 
 ### 이후 기능
 
-1. 포지션 / 주문 패널
-2. 전략 신호 패널
-3. 자동매매 실행 흐름
-4. 로그 / 알림 / 관측성
+1. 전략 신호 패널
+2. 자동매매 실행 흐름
+3. 로그 / 알림 / 관측성
+4. 실제 주문 엔진 연결
 
 ## 현재 리스크
 

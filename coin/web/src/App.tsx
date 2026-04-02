@@ -1,8 +1,13 @@
 import './App.css'
 import { MarketList } from './components/MarketList'
 import { MetricCard } from './components/MetricCard'
+import { OrderHistory } from './components/OrderHistory'
+import { OrderTicket } from './components/OrderTicket'
+import { PaperTradingSummary } from './components/PaperTradingSummary'
 import { PriceChart } from './components/PriceChart'
+import { PositionsTable } from './components/PositionsTable'
 import { useMarketDashboard } from './hooks/useMarketDashboard'
+import { usePaperTrading } from './hooks/usePaperTrading'
 import { formatCompactCurrency, formatCurrency, formatPercent } from './lib/format'
 
 const refreshOptions = [
@@ -35,6 +40,18 @@ function App() {
     setMarketSort,
     toggleFavorite,
   } = useMarketDashboard()
+  const {
+    accountSummary,
+    error: paperError,
+    isLoading: isPaperLoading,
+    isSubmitting,
+    orders,
+    positions,
+    resetPortfolio,
+    selectedPosition,
+    submitBuyOrder,
+    submitSellOrder,
+  } = usePaperTrading(marketList, selectedMarket)
 
   return (
     <main className="app-shell">
@@ -201,6 +218,28 @@ function App() {
               기술스택과 백엔드 구현을 독립적으로 바꿀 수 있습니다.
             </p>
           </article>
+
+          <PaperTradingSummary summary={accountSummary} />
+
+          <section className="trade-grid">
+            <OrderTicket
+              isSubmitting={isSubmitting}
+              onBuy={submitBuyOrder}
+              onReset={resetPortfolio}
+              onSell={submitSellOrder}
+              selectedMarket={selectedMarket}
+              selectedPosition={selectedPosition}
+            />
+            <PositionsTable positions={positions} />
+          </section>
+
+          <OrderHistory orders={orders} />
+
+          {paperError && !isPaperLoading ? (
+            <article className="panel footnote-panel">
+              <p>Paper trading 상태를 불러오지 못했습니다: {paperError}</p>
+            </article>
+          ) : null}
         </section>
       </section>
     </main>
