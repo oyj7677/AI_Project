@@ -1,5 +1,12 @@
 import { createServer } from 'node:http'
 import { createTtlCache } from './cache.mjs'
+import {
+  applyBuyOrder,
+  applySellOrder,
+  loadPaperState,
+  resetPaperState,
+  savePaperState,
+} from './paperState.mjs'
 import { fetchChart, fetchMarkets } from './upbitAdapter.mjs'
 
 const port = Number(process.env.PORT ?? '8787')
@@ -7,12 +14,14 @@ const upbitBaseUrl = process.env.UPBIT_API_BASE ?? 'https://api.upbit.com'
 const allowedOrigins = process.env.ALLOWED_ORIGINS ?? '*'
 const marketsCacheTtlMs = Number(process.env.MARKETS_CACHE_TTL_MS ?? '5000')
 const chartCacheTtlMs = Number(process.env.CHART_CACHE_TTL_MS ?? '3000')
+const paperStateFile = process.env.PAPER_STATE_FILE ?? './data/paper-trading.json'
 const cache = createTtlCache()
+let paperState = await loadPaperState(paperStateFile)
 
 function writeJson(response, statusCode, body, origin) {
   response.writeHead(statusCode, {
     'access-control-allow-origin': origin,
-    'access-control-allow-methods': 'GET,OPTIONS',
+    'access-control-allow-methods': 'GET,POST,OPTIONS',
     'access-control-allow-headers': 'Content-Type',
     'cache-control': 'no-store',
     'content-type': 'application/json; charset=utf-8',
@@ -34,14 +43,14 @@ const server = createServer(async (request, response) => {
   if (request.method === 'OPTIONS') {
     response.writeHead(204, {
       'access-control-allow-origin': origin,
-      'access-control-allow-methods': 'GET,OPTIONS',
+      'access-control-allow-methods': 'GET,POST,OPTIONS',
       'access-control-allow-headers': 'Content-Type',
     })
     response.end()
     return
   }
 
-  if (!request.url || request.method !== 'GET') {
+  if (!request.url) {
     writeJson(response, 404, { error: 'Not Found' }, origin)
     return
   }
@@ -60,6 +69,73 @@ const server = createServer(async (request, response) => {
         },
         origin,
       )
+      return
+    }
+
+    if (url.pathname === '/api/paper/portfolio' && request.method === 'GET') {
+      writeJson(
+        response,
+        200,
+        {
+          initialCashBalance: paperState.initialCashBalance,
+          cashBalance: paperState.cashBalance,
+          realizedPnl: paperState.realizedPnl,
+          feeRate: paperState.feeRate,
+          positions: paperState.positions,
+          updatedAt: paperState.updatedAt,
+        },
+        origin,
+      )
+      return
+    }
+
+    if (url.pathname === '/api/paper/orders' && request.method === 'GET') {
+      writeJson(response, 200, { orders: paperState.orders }, origin)
+      return
+    }
+
+    if (url.pathname === '/api/paper/reset' && request.method === 'POST') {
+      paperState = resetPaperState()
+      await savePaperState(paperStateFile, paperState)
+      writeJson(
+        response,
+        200,
+        { ok: true, message: 'Paper portfolio reset', updatedAt: paperState.updatedAt },
+        origin,
+      )
+      return
+    }
+
+    if (url.pathname === '/api/paper/orders' && request.method === 'POST') {
+      const body = await readJsonBody(request)
+      const { market, side } = body
+      if (!market || (side !== 'buy' && side !== 'sell')) {
+        writeJson(response, 400, { error: 'Invalid order payload' }, origin)
+        return
+      }
+
+      const currentMarkets = await fetchMarkets(upbitBaseUrl, 'KRW')
+      const snapshot = currentMarkets.find((entry) => entry.market === market)
+      if (!snapshot) {
+        writeJson(response, 404, { error: 'Unknown market' }, origin)
+        return
+      }
+
+      const order =
+        side === 'buy'
+          ? applyBuyOrder(paperState, {
+              market,
+              amountKrw: Number(body.amountKrw),
+              price: snapshot.tradePrice,
+            })
+          : applySellOrder(paperState, {
+              market,
+              quantity: Number(body.quantity),
+              price: snapshot.tradePrice,
+            })
+
+      await savePaperState(paperStateFile, paperState)
+      writeJson(response, 200, { order, portfolio: paperState }, origin)
       return
     }
 
@@ -108,6 +184,15 @@ const server = createServer(async (request, response) => {
     )
   }
 })
+
+async function readJsonBody(request) {
+  const chunks = []
+  for await (const chunk of request) {
+    chunks.push(chunk)
+  }
+  const raw = Buffer.concat(chunks).toString('utf-8')
+  return raw ? JSON.parse(raw) : {}
+}
 
 server.listen(port, () => {
   console.log(`coin-proxy listening on http://localhost:${port}`)

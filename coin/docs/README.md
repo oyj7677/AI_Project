@@ -9,6 +9,9 @@
 - [TRD - Coin Market Screen](./TRD-2026-04-01-coin-market-screen.md)
 - [Implementation Status](./IMPLEMENTATION_STATUS.md)
 - [Phase 2 Plan](./PHASE2_PLAN.md)
+- [Phase 3 Paper Trading Plan](./PHASE3_PAPER_TRADING_PLAN.md)
+- [TRD - Paper Trading](./TRD-2026-04-02-paper-trading.md)
+- [ADR - Paper Trading Architecture](./ADR-2026-04-02-paper-trading-arch.md)
 
 ## Templates
 

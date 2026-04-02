@@ -21,6 +21,10 @@ npm run dev
 - `GET /health`
 - `GET /api/markets?quote=KRW`
 - `GET /api/markets/:market/chart?range=1H|4H|1D|1W`
+- `GET /api/paper/portfolio`
+- `GET /api/paper/orders`
+- `POST /api/paper/orders`
+- `POST /api/paper/reset`
 
 ## 환경 변수
 
@@ -29,3 +33,8 @@ npm run dev
 - `ALLOWED_ORIGINS`
 - `MARKETS_CACHE_TTL_MS`
 - `CHART_CACHE_TTL_MS`
+- `PAPER_STATE_FILE`
+- `PAPER_INITIAL_CASH`
+- `PAPER_FEE_RATE`
+
+기본 상태 파일은 `./data/paper-trading.json`이며, 이 파일은 git에서 제외됩니다.
