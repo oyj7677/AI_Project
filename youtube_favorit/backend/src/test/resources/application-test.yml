@@ -1,0 +1,73 @@
+spring:
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+management:
+  health:
+    redis:
+      enabled: false
+
+app:
+  base-url: http://localhost:8080
+  timezone: Asia/Seoul
+  default-page-size: 20
+  max-page-size: 50
+  sample-data:
+    enabled: false
+  features:
+    show-schedules: true
+    show-recent-activities: true
+    enable-live-now: true
+  reliability:
+    live-stale-after-minutes: 5
+    activity-stale-after-minutes: 30
+    profile-stale-after-minutes: 360
+    max-retry-attempts: 2
+    live-backoff-multiplier: 2
+    activity-backoff-multiplier: 2
+    profile-backoff-multiplier: 2
+  support:
+    platforms:
+      - platform: youtube
+        enabled: true
+        support-mode: auto
+      - platform: instagram
+        enabled: true
+        support-mode: limited
+      - platform: x
+        enabled: false
+        support-mode: disabled
+      - platform: chzzk
+        enabled: false
+        support-mode: disabled
+      - platform: soop
+        enabled: false
+        support-mode: disabled
+  youtube:
+    api-key: test-key
+    api-base-url: https://www.googleapis.com/youtube/v3
+    api-timeout-ms: 3000
+    max-results: 20
+    channel-metadata-poll-minutes: 720
+    activity-poll-minutes: 15
+    live-poll-minutes: 3
+    enable-etag: true
+    sync-enabled: false
+    mock-enabled: true
+  instagram:
+    enabled: false
+    api-base-url: https://graph.facebook.com
+    timeout-ms: 3000
+  operator-auth:
+    enabled: true
+    username: operator
+    password: operator
+

@@ -1,4 +1,4 @@
-import { startTransition, useDeferredValue, useState } from 'react'
+import { startTransition } from 'react'
 import { formatCompactCurrency, formatCurrency, formatPercent } from '../lib/format'
 import type { MarketListItem, MarketSort } from '../types/market'
 
@@ -10,7 +10,10 @@ interface MarketListProps {
   onSelect: (marketCode: string) => void
   onSortChange: (value: MarketSort) => void
   onToggleFavorite: (marketCode: string) => void
+  query: string
+  resultCount: number
   selectedMarketCode: string | null
+  totalCount: number
 }
 
 export function MarketList({
@@ -21,51 +24,40 @@ export function MarketList({
   onSelect,
   onSortChange,
   onToggleFavorite,
+  query,
+  resultCount,
   selectedMarketCode,
+  totalCount,
 }: MarketListProps) {
-  const [query, setQuery] = useState('')
-  const deferredQuery = useDeferredValue(query.trim().toLowerCase())
-
-  const filteredMarkets = markets.filter((market) => {
-    if (!deferredQuery) {
-      return true
-    }
-
-    return [
-      market.market,
-      market.koreanName,
-      market.englishName,
-    ].some((value) => value.toLowerCase().includes(deferredQuery))
-  })
+  const normalizedQuery = query.trim()
 
   return (
     <>
       <div className="market-toolbar">
-        <label className="market-search-label" htmlFor="market-search">
-          종목 검색
-        </label>
-        <input
-          aria-label="코인 종목 검색"
-          className="market-search"
-          id="market-search"
-          type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="BTC, 비트코인, Ethereum 검색"
-        />
-        <label className="market-sort-label" htmlFor="market-sort">
-          정렬 기준
-        </label>
-        <select
-          className="market-sort"
-          id="market-sort"
-          value={marketSort}
-          onChange={(event) => onSortChange(event.target.value as MarketSort)}
-        >
-          <option value="volume">거래대금 순</option>
-          <option value="change">등락률 순</option>
-          <option value="name">이름 순</option>
-        </select>
+        <div className="market-toolbar-copy">
+          <p className="market-sort-label">표시 중인 종목</p>
+          <p className="market-toolbar-caption">
+            {normalizedQuery
+              ? `"${normalizedQuery}" 결과 ${resultCount}개`
+              : `전체 ${totalCount}개 종목`}
+          </p>
+        </div>
+
+        <div className="market-sort-shell">
+          <label className="market-sort-label" htmlFor="market-sort">
+            정렬 기준
+          </label>
+          <select
+            className="market-sort"
+            id="market-sort"
+            value={marketSort}
+            onChange={(event) => onSortChange(event.target.value as MarketSort)}
+          >
+            <option value="volume">거래대금 순</option>
+            <option value="change">등락률 순</option>
+            <option value="name">이름 순</option>
+          </select>
+        </div>
       </div>
 
       <div className="market-list">
@@ -82,14 +74,18 @@ export function MarketList({
           </div>
         ) : null}
 
-        {!isLoading && !error && filteredMarkets.length === 0 ? (
+        {!isLoading && !error && markets.length === 0 ? (
           <div className="empty-state">
-            <p>검색 결과가 없습니다.</p>
+            <p>
+              {normalizedQuery
+                ? '검색 결과가 없습니다.'
+                : '표시할 종목이 없습니다.'}
+            </p>
           </div>
         ) : null}
 
         {!isLoading && !error
-          ? filteredMarkets.map((market) => (
+          ? markets.map((market) => (
               <article
                 className={`market-row ${
                   selectedMarketCode === market.market ? 'active' : ''

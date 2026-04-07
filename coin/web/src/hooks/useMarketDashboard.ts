@@ -1,4 +1,11 @@
-import { useEffect, useEffectEvent, useRef, useState } from 'react'
+import {
+  useDeferredValue,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+} from 'react'
+import { filterMarkets, resolveSelectedMarketCode } from '../lib/marketView'
 import { marketDataGateway } from '../services/marketDataGateway'
 import type {
   ChartPoint,
@@ -24,6 +31,7 @@ function asMessage(error: unknown) {
 export function useMarketDashboard() {
   const [markets, setMarkets] = useState<DashboardMarket[]>([])
   const [selectedMarketCode, setSelectedMarketCode] = useState<string | null>(null)
+  const [marketQuery, setMarketQuery] = useState('')
   const [chartRange, setChartRange] = useState<ChartRange>(DEFAULT_RANGE)
   const [marketSort, setMarketSort] = useState<MarketSort>(DEFAULT_SORT)
   const [refreshIntervalMs, setRefreshIntervalMs] = useState(
@@ -41,6 +49,7 @@ export function useMarketDashboard() {
   )
   const chartRequestIdRef = useRef(0)
   const pollingInFlightRef = useRef(false)
+  const deferredMarketQuery = useDeferredValue(marketQuery)
 
   useEffect(() => {
     try {
@@ -97,6 +106,8 @@ export function useMarketDashboard() {
         isFavorite: favoriteCodes.includes(market.market),
       }),
     )
+  const filteredMarketList = filterMarkets(marketList, deferredMarketQuery)
+  const favoriteMarketList = marketList.filter((market) => market.isFavorite)
 
   async function refreshMarkets(options: { silent?: boolean } = {}) {
     if (!options.silent) {
@@ -110,12 +121,7 @@ export function useMarketDashboard() {
 
       setMarkets(nextMarkets)
       setSelectedMarketCode((current) => {
-        if (current && nextMarkets.some((market) => market.market === current)) {
-          nextSelectedMarketCode = current
-          return current
-        }
-
-        nextSelectedMarketCode = nextMarkets[0]?.market ?? null
+        nextSelectedMarketCode = resolveSelectedMarketCode(nextMarkets, current)
         return nextSelectedMarketCode
       })
       return nextSelectedMarketCode
@@ -210,6 +216,8 @@ export function useMarketDashboard() {
     chartError,
     chartRange,
     favoriteCodes,
+    favoriteMarketList,
+    filteredMarketList,
     isLivePolling: refreshIntervalMs > 0,
     isPageVisible,
     isChartLoading,
@@ -224,6 +232,7 @@ export function useMarketDashboard() {
         }).format(lastUpdatedAt)
       : null,
     marketError,
+    marketQuery,
     marketList,
     marketSort,
     refreshIntervalMs,
@@ -231,8 +240,10 @@ export function useMarketDashboard() {
     selectedMarket,
     selectMarket: setSelectedMarketCode,
     setChartRange,
+    setMarketQuery,
     setRefreshIntervalMs,
     setMarketSort,
+    totalMarketCount: marketList.length,
     toggleFavorite: (marketCode: string) => {
       setFavoriteCodes((current) => {
         const next = current.includes(marketCode)

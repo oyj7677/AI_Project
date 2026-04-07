@@ -1,0 +1,101 @@
+:root {
+  color-scheme: light;
+  --font-sans: 'Space Grotesk', 'Avenir Next', 'Segoe UI', sans-serif;
+  --font-serif: 'Newsreader', 'Iowan Old Style', Georgia, serif;
+  --canvas: #f5eee3;
+  --canvas-accent: #efe1c6;
+  --panel: rgba(255, 252, 247, 0.82);
+  --panel-elevated: rgba(255, 255, 255, 0.75);
+  --input-bg: rgba(255, 255, 255, 0.72);
+  --text: #1d2521;
+  --muted: #58625d;
+  --muted-strong: #41504a;
+  --border: rgba(29, 37, 33, 0.1);
+  --border-strong: rgba(29, 37, 33, 0.2);
+  --accent: #136f63;
+  --accent-soft: rgba(19, 111, 99, 0.18);
+  --accent-contrast: #f5f1e7;
+  --warning: #c2551a;
+  --shadow-soft:
+    0 20px 60px rgba(47, 60, 54, 0.1),
+    0 8px 20px rgba(47, 60, 54, 0.06);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--text);
+  background: var(--canvas);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --canvas: #0f1614;
+  --canvas-accent: #17201d;
+  --panel: rgba(22, 32, 29, 0.82);
+  --panel-elevated: rgba(26, 39, 35, 0.88);
+  --input-bg: rgba(20, 29, 27, 0.92);
+  --text: #f2f1eb;
+  --muted: #b1beb7;
+  --muted-strong: #d5ddd8;
+  --border: rgba(242, 241, 235, 0.1);
+  --border-strong: rgba(242, 241, 235, 0.2);
+  --accent: #70c7b6;
+  --accent-soft: rgba(112, 199, 182, 0.16);
+  --accent-contrast: #0f1614;
+  --warning: #ffb37a;
+  --shadow-soft:
+    0 20px 60px rgba(0, 0, 0, 0.3),
+    0 8px 20px rgba(0, 0, 0, 0.22);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(255, 191, 105, 0.2), transparent 24rem),
+    radial-gradient(circle at bottom right, rgba(19, 111, 99, 0.15), transparent 28rem),
+    linear-gradient(180deg, var(--canvas), var(--canvas-accent));
+  color: var(--text);
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(circle at center, black 30%, transparent 85%);
+  pointer-events: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+input,
+select,
+textarea,
+option {
+  color: inherit;
+}
+
+#root {
+  min-height: 100vh;
+}
