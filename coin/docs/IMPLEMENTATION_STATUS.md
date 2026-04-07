@@ -1,7 +1,7 @@
 # Coin Project Implementation Status
 
 작성일: 2026-04-01
-업데이트: 2026-04-01
+업데이트: 2026-04-02
 
 ## 목적
 
@@ -15,10 +15,11 @@
 
 ## 현재 상태
 
-- 현재 단계: `Phase 3 paper trading 구현 진행 중`
-- 현재 PR: `생성 예정`
-- PR 상태: `구현/검증 진행 중`
-- 체크 상태: `coin/web test / build / lint, coin/proxy test 진행 중`
+- 현재 단계: `Phase 3 paper trading 구현 완료`
+- 현재 PR: `#8`
+  링크: `https://github.com/oyj7677/AI_Project/pull/8`
+- PR 상태: `MERGED`
+- 체크 상태: `coin/web test / build / lint, coin/proxy test 통과`
 
 ## 현재까지 구현된 것
 
@@ -28,6 +29,8 @@
 - ADR 작성 완료
 - TRD 작성 완료
 - 1차 계획서 작성 완료
+- 2차 계획서 작성 완료
+- 3차 paper trading 계획서 작성 완료
 
 ### 프론트엔드 1차 구현
 
@@ -64,13 +67,17 @@
 - 운영용 `coin/proxy` API 프록시 스캐폴드
 - 프론트가 거래소 경로 대신 앱 전용 `/api` 계약만 사용하도록 전환
 
-### Phase 3 진행 항목
+### Phase 3 구현 완료 항목
 
 - paper portfolio 상태 모델
 - paper buy / sell engine
 - paper order history
 - paper reset
 - 주문 티켓 / 포지션 / 주문 이력 UI
+- paper trading TRD 작성 완료
+- paper trading ADR 작성 완료
+- file persistence 기반 상태 저장 완료
+- 프론트가 `PaperTradingGateway` 계약만 사용하도록 분리 완료
 
 ## 현재 구현 위치
 
@@ -78,43 +85,38 @@
 - 웹 앱: `coin/web`
 - 프로젝트 안내: `coin/README.md`
 
-## 현재 확인된 작업 트리 메모
-
-- 로컬 작업 트리 기준으로 기존 `web/` 경로는 삭제 상태로 보이고, 현재 앱 구현은 `coin/web` 아래에 존재한다.
-- 즉, 현재는 `coin` 폴더를 독립 프로젝트 루트처럼 정리하는 방향의 로컬 변경이 진행 중인 상태다.
-
 ## 다음 작업
 
 ### 바로 다음
 
-1. paper trading PR 생성
-2. Copilot 리뷰 확인 및 후속 리팩터링
-3. PR 머지
+1. 전략 신호 패널 설계
+2. paper trading과 시그널 연결
+3. 포지션 관리 규칙 정의
 
-### 2차 구현 후보
+### 단기 후보
 
-1. 종목 정렬 기준 토글
-2. 차트 인터랙션 강화
-3. 기본 관심 종목 고정
-4. 실시간 업데이트 방식 결정
-5. 운영용 API 프록시 설계
+1. 전략 시그널 패널
+2. PnL/수수료 모델 세분화
+3. paper portfolio persistence 개선
+4. websocket market feed 적용 검토
+5. 운영 배포 프록시 하드닝
 
 ### 이후 기능
 
-1. 전략 신호 패널
-2. 자동매매 실행 흐름
-3. 로그 / 알림 / 관측성
-4. 실제 주문 엔진 연결
+1. 자동매매 실행 흐름
+2. 로그 / 알림 / 관측성
+3. 실제 주문 엔진 연결
+4. 전략 백테스트
 
 ## 현재 리스크
 
-- `coin/web` 구조 확정용 re-PR이 아직 머지 전이다.
-- Upbit 연동은 개발 프록시 기준이므로 운영 배포용 프록시 설계가 아직 필요하다.
-- 차트는 1차 구현 수준이라 상호작용성과 금융 차트 표현은 이후 보강이 필요하다.
+- paper state는 파일 기반 저장이라 단일 인스턴스 환경에 적합하다.
+- 현재 주문 모델은 시장가 즉시 체결 단순화 모델이라 실거래와 차이가 있다.
+- 운영 배포용 프록시는 스캐폴드 수준이며 보안/캐시 설정 보강이 필요하다.
 
 ## 완료 판단 기준
 
-- `coin/web` 기준 re-PR 머지
-- 앱 경로 확정
-- 로컬 실행 문서와 실제 디렉터리 구조 일치
-- 2차 구현 우선순위 확정
+- phase 3 PR `#8` 머지
+- paper buy/sell/reset flow 검증
+- frontend / proxy 계약 분리 유지
+- 다음 기능 우선순위 확정

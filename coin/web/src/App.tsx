@@ -1,4 +1,5 @@
 import './App.css'
+import { MarketLookupPanel } from './components/MarketLookupPanel'
 import { MarketList } from './components/MarketList'
 import { MetricCard } from './components/MetricCard'
 import { OrderHistory } from './components/OrderHistory'
@@ -9,6 +10,7 @@ import { PositionsTable } from './components/PositionsTable'
 import { useMarketDashboard } from './hooks/useMarketDashboard'
 import { usePaperTrading } from './hooks/usePaperTrading'
 import { formatCompactCurrency, formatCurrency, formatPercent } from './lib/format'
+import type { MarketListItem } from './types/market'
 
 const refreshOptions = [
   { label: '꺼짐', value: 0 },
@@ -23,12 +25,15 @@ function App() {
     chartError,
     chartRange,
     favoriteCodes,
+    favoriteMarketList,
+    filteredMarketList,
     isLivePolling,
     isPageVisible,
     isChartLoading,
     isMarketLoading,
     lastUpdatedLabel,
     marketError,
+    marketQuery,
     marketList,
     marketSort,
     refreshIntervalMs,
@@ -36,8 +41,10 @@ function App() {
     selectedMarket,
     selectMarket,
     setChartRange,
+    setMarketQuery,
     setRefreshIntervalMs,
     setMarketSort,
+    totalMarketCount,
     toggleFavorite,
   } = useMarketDashboard()
   const {
@@ -52,12 +59,30 @@ function App() {
     submitBuyOrder,
     submitSellOrder,
   } = usePaperTrading(marketList, selectedMarket)
+  const lookupSuggestions: MarketListItem[] = []
+  const seenMarketCodes = new Set<string>()
+  const suggestionSource = marketQuery.trim()
+    ? filteredMarketList
+    : [...favoriteMarketList, ...marketList]
+
+  for (const market of suggestionSource) {
+    if (seenMarketCodes.has(market.market)) {
+      continue
+    }
+
+    seenMarketCodes.add(market.market)
+    lookupSuggestions.push(market)
+
+    if (lookupSuggestions.length === 6) {
+      break
+    }
+  }
 
   return (
     <main className="app-shell">
       <section className="hero-panel">
         <div>
-          <p className="eyebrow">Phase 2</p>
+          <p className="eyebrow">Phase 3</p>
           <h1>Crypto Market Board</h1>
           <p className="hero-copy">
             자동매매 시스템의 첫 화면으로, 종목을 훑고 가격 흐름을 빠르게
@@ -114,8 +139,11 @@ function App() {
             error={marketError}
             isLoading={isMarketLoading}
             marketSort={marketSort}
-            markets={marketList}
+            markets={filteredMarketList}
+            query={marketQuery}
+            resultCount={filteredMarketList.length}
             selectedMarketCode={selectedMarket?.market ?? null}
+            totalCount={totalMarketCount}
             onSelect={selectMarket}
             onSortChange={setMarketSort}
             onToggleFavorite={toggleFavorite}
@@ -123,6 +151,21 @@ function App() {
         </aside>
 
         <section className="content-column">
+          <article className="panel lookup-panel">
+            <MarketLookupPanel
+              error={marketError}
+              isLoading={isMarketLoading}
+              isSelectedFavorite={favoriteCodes.includes(selectedMarket?.market ?? '')}
+              onQueryChange={setMarketQuery}
+              onSelect={selectMarket}
+              query={marketQuery}
+              resultCount={filteredMarketList.length}
+              selectedMarket={selectedMarket}
+              suggestions={lookupSuggestions}
+              totalCount={totalMarketCount}
+            />
+          </article>
+
           <article className="panel spotlight-panel">
             <header className="spotlight-header">
               <div>

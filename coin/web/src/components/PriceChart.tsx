@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { buildChartGeometry, getNearestPointIndex } from '../lib/chartMath'
 import { chartRanges } from '../lib/chartRanges'
-import { formatCurrency, formatShortDateTime } from '../lib/format'
+import { formatCurrency, formatPercent, formatShortDateTime } from '../lib/format'
+import { buildChartSummary } from '../lib/marketView'
 import type { ChartPoint, ChartRange } from '../types/market'
 
 interface PriceChartProps {
@@ -23,6 +24,7 @@ export function PriceChart({
 }: PriceChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const chart = useMemo(() => buildChartGeometry(data), [data])
+  const summary = useMemo(() => buildChartSummary(data), [data])
   const effectiveIndex =
     activeIndex === null ? Math.max(data.length - 1, 0) : activeIndex
   const activePoint = data[effectiveIndex]
@@ -42,8 +44,11 @@ export function PriceChart({
           <p className="panel-eyebrow">Price Chart</p>
           <h2>{marketLabel} 그래프</h2>
           <p className="chart-subtitle">
-            시장 흐름을 먼저 읽고, 이후 전략 패널을 이 영역에 연결할 수 있도록
-            설계했습니다.
+            {summary
+              ? `${formatShortDateTime(summary.startTimestamp)} ~ ${formatShortDateTime(
+                  summary.endTimestamp,
+                )} 구간 흐름을 바로 확인할 수 있습니다.`
+              : '시장 흐름을 먼저 읽고, 이후 전략 패널을 이 영역에 연결할 수 있도록 설계했습니다.'}
           </p>
         </div>
 
@@ -103,6 +108,40 @@ export function PriceChart({
 
         {!isLoading && !error && chart ? (
           <>
+            {summary ? (
+              <>
+                <div className="chart-insight-grid">
+                  <div className="chart-insight">
+                    <span>현재가</span>
+                    <strong>{formatCurrency(summary.latestClose)}</strong>
+                  </div>
+                  <div
+                    className={`chart-insight ${
+                      summary.changeRate >= 0 ? 'rise' : 'fall'
+                    }`}
+                  >
+                    <span>조회 구간 등락</span>
+                    <strong>
+                      {formatPercent(summary.changeRate)} (
+                      {formatCurrency(summary.changeAmount)})
+                    </strong>
+                  </div>
+                  <div className="chart-insight">
+                    <span>구간 변동폭</span>
+                    <strong>{formatCurrency(summary.max - summary.min)}</strong>
+                  </div>
+                  <div className="chart-insight">
+                    <span>캔들 포인트</span>
+                    <strong>{summary.pointCount}개</strong>
+                  </div>
+                </div>
+
+                <p className="chart-range-note">
+                  저점 {formatCurrency(summary.min)} / 고점 {formatCurrency(summary.max)}
+                </p>
+              </>
+            ) : null}
+
             <svg
               className="chart-svg"
               role="img"
