@@ -1,5 +1,12 @@
-import { startTransition, useEffect, useState } from 'react'
-import { formatDateLabel } from '../lib/date'
+import { startTransition, useEffect, useEffectEvent, useState } from 'react'
+import { formatDateLabel, getLocalDateKey } from '../lib/date'
+import {
+  createHabit as createHabitRequest,
+  deleteHabit as deleteHabitRequest,
+  fetchHabits,
+  importHabits as importHabitsRequest,
+  toggleHabitCompletion as toggleHabitCompletionRequest,
+} from '../lib/api'
 import { buildContributionHeatmap, type HeatmapData } from '../lib/heatmap'
 import {
   getCompletionEvents,
@@ -9,7 +16,6 @@ import {
   getHabitLongestStreak,
   isHabitCompletedForDate,
   isHabitScheduledForDate,
-  toggleHabitCompletion,
 } from '../lib/habitMetrics'
 import { loadHabits, loadTheme, saveHabits, saveTheme } from '../lib/storage'
 import type {
@@ -40,16 +46,18 @@ export interface CategorySummary {
   onTrackCount: number
 }
 
-function createHabit(values: HabitFormValues): Habit {
-  return {
-    id: crypto.randomUUID(),
-    title: values.title.trim(),
-    description: values.description.trim(),
-    category: values.category,
-    frequency: values.frequency,
-    createdAt: new Date().toISOString(),
-    completedDates: [],
+export interface SyncBanner {
+  title: string
+  message: string
+  tone: 'neutral' | 'success' | 'warning'
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message) {
+    return `${fallback} ${error.message}`
   }
+
+  return fallback
 }
 
 function sortHabits(left: HabitWithMetrics, right: HabitWithMetrics) {
@@ -83,6 +91,9 @@ function sortCategories(left: CategorySummary, right: CategorySummary) {
 export function useHabitTracker() {
   const [habits, setHabits] = useState<Habit[]>(() => loadHabits())
   const [theme, setTheme] = useState<ThemeMode>(() => loadTheme())
+  const [isLoading, setIsLoading] = useState(true)
+  const [syncError, setSyncError] = useState<string | null>(null)
+  const [syncInfo, setSyncInfo] = useState<string | null>(null)
   const referenceDate = new Date()
 
   useEffect(() => {
@@ -93,6 +104,44 @@ export function useHabitTracker() {
     saveTheme(theme)
     document.documentElement.dataset.theme = theme
   }, [theme])
+
+  const syncHabits = useEffectEvent(async () => {
+    setIsLoading(true)
+    setSyncError(null)
+
+    try {
+      const remoteHabits = await fetchHabits()
+      const cachedHabits = loadHabits()
+      const shouldImportCachedHabits =
+        remoteHabits.length === 0 && cachedHabits.length > 0
+
+      const nextHabits = shouldImportCachedHabits
+        ? await importHabitsRequest(cachedHabits)
+        : remoteHabits
+
+      startTransition(() => {
+        setHabits(nextHabits)
+      })
+      setSyncInfo(
+        shouldImportCachedHabits
+          ? '브라우저에 저장돼 있던 기존 습관을 새 Spring 서버로 옮겼습니다.'
+          : null,
+      )
+    } catch (error) {
+      setSyncError(
+        getErrorMessage(
+          error,
+          'Spring 서버에 연결할 수 없어 브라우저에 남아 있는 마지막 데이터를 보여주고 있습니다.',
+        ),
+      )
+    } finally {
+      setIsLoading(false)
+    }
+  })
+
+  useEffect(() => {
+    void syncHabits()
+  }, [])
 
   const habitCards = habits
     .map((habit) => ({
@@ -152,26 +201,78 @@ export function useHabitTracker() {
       ? '습관을 추가하면 꾸준함 지표가 여기에 표시돼요.'
       : `현재 전체 계획의 꾸준함은 ${dashboardStats.consistencyScore}%예요`
 
-  function addHabit(values: HabitFormValues) {
-    startTransition(() => {
-      setHabits((current) => [createHabit(values), ...current])
-    })
-  }
+  const syncBanner: SyncBanner | null = isLoading
+    ? {
+        title: 'Spring 서버 연결 중',
+        message: '습관 데이터를 불러오고 있습니다.',
+        tone: 'neutral',
+      }
+    : syncError
+      ? {
+          title: '서버 연결 확인 필요',
+          message: syncError,
+          tone: 'warning',
+        }
+      : syncInfo
+        ? {
+            title: '데이터 이전 완료',
+            message: syncInfo,
+            tone: 'success',
+          }
+        : null
 
-  function toggleHabitCompletionById(id: string) {
-    startTransition(() => {
-      setHabits((current) =>
-        current.map((habit) =>
-          habit.id === id ? toggleHabitCompletion(habit, referenceDate) : habit,
-        ),
+  async function addHabit(values: HabitFormValues) {
+    try {
+      const createdHabit = await createHabitRequest(values)
+
+      setSyncError(null)
+      setSyncInfo(null)
+      startTransition(() => {
+        setHabits((current) => [createdHabit, ...current])
+      })
+    } catch (error) {
+      const message = getErrorMessage(
+        error,
+        '새 습관을 서버에 저장하지 못했습니다.',
       )
-    })
+      setSyncError(message)
+      throw new Error(message)
+    }
   }
 
-  function deleteHabit(id: string) {
-    startTransition(() => {
-      setHabits((current) => current.filter((habit) => habit.id !== id))
-    })
+  async function toggleHabitCompletionById(id: string) {
+    try {
+      const updatedHabit = await toggleHabitCompletionRequest(
+        id,
+        getLocalDateKey(new Date()),
+      )
+
+      setSyncError(null)
+      startTransition(() => {
+        setHabits((current) =>
+          current.map((habit) => (habit.id === id ? updatedHabit : habit)),
+        )
+      })
+    } catch (error) {
+      setSyncError(
+        getErrorMessage(error, '체크인 변경 사항을 서버에 반영하지 못했습니다.'),
+      )
+    }
+  }
+
+  async function deleteHabit(id: string) {
+    try {
+      await deleteHabitRequest(id)
+
+      setSyncError(null)
+      startTransition(() => {
+        setHabits((current) => current.filter((habit) => habit.id !== id))
+      })
+    } catch (error) {
+      setSyncError(
+        getErrorMessage(error, '습관 삭제 요청을 서버에 반영하지 못했습니다.'),
+      )
+    }
   }
 
   function toggleTheme() {
@@ -189,6 +290,7 @@ export function useHabitTracker() {
     categorySummary,
     streakLeader,
     consistencyLabel,
+    syncBanner,
     addHabit,
     toggleHabitCompletion: toggleHabitCompletionById,
     deleteHabit,
