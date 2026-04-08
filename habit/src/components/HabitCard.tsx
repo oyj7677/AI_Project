@@ -3,8 +3,8 @@ import type { HabitWithMetrics } from '../hooks/useHabitTracker'
 
 interface HabitCardProps {
   habit: HabitWithMetrics
-  onToggleCompletion: (id: string) => void
-  onDelete: (id: string) => void
+  onToggleCompletion: (id: string) => Promise<void> | void
+  onDelete: (id: string) => Promise<void> | void
 }
 
 function getFrequencyLabel(frequency: HabitWithMetrics['frequency']) {

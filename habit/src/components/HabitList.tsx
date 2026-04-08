@@ -3,8 +3,8 @@ import { HabitCard } from './HabitCard'
 
 interface HabitListProps {
   habits: HabitWithMetrics[]
-  onToggleCompletion: (id: string) => void
-  onDelete: (id: string) => void
+  onToggleCompletion: (id: string) => Promise<void> | void
+  onDelete: (id: string) => Promise<void> | void
   onCreateHabit?: () => void
 }
 

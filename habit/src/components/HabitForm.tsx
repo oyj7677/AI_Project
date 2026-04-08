@@ -6,7 +6,7 @@ import {
 } from '../types/habit'
 
 interface HabitFormProps {
-  onSubmit: (values: HabitFormValues) => void
+  onSubmit: (values: HabitFormValues) => Promise<void> | void
   wrapInPanel?: boolean
   showHeading?: boolean
   onCancel?: () => void
@@ -27,6 +27,7 @@ export function HabitForm({
 }: HabitFormProps) {
   const [values, setValues] = useState(initialValues)
   const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   function updateField<Key extends keyof HabitFormValues>(
     key: Key,
@@ -38,7 +39,7 @@ export function HabitForm({
     }))
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     if (!values.title.trim()) {
@@ -46,13 +47,25 @@ export function HabitForm({
       return
     }
 
-    onSubmit(values)
-    setValues((current) => ({
-      ...initialValues,
-      category: current.category,
-      frequency: current.frequency,
-    }))
+    setIsSubmitting(true)
     setError('')
+
+    try {
+      await onSubmit(values)
+      setValues((current) => ({
+        ...initialValues,
+        category: current.category,
+        frequency: current.frequency,
+      }))
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : '습관을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.',
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const formContent = (
@@ -72,6 +85,7 @@ export function HabitForm({
             name="title"
             placeholder="점심 후 물 한 잔 마시기"
             value={values.title}
+            disabled={isSubmitting}
             onChange={(event) => updateField('title', event.target.value)}
           />
         </div>
@@ -83,6 +97,7 @@ export function HabitForm({
             name="description"
             placeholder="왜 중요한 습관인지, 완료 기준이 무엇인지 짧게 적어보세요."
             value={values.description}
+            disabled={isSubmitting}
             onChange={(event) => updateField('description', event.target.value)}
           />
         </div>
@@ -94,6 +109,7 @@ export function HabitForm({
               id="habit-category"
               name="category"
               value={values.category}
+              disabled={isSubmitting}
               onChange={(event) => updateField('category', event.target.value)}
             >
               {HABIT_CATEGORIES.map((category) => (
@@ -110,6 +126,7 @@ export function HabitForm({
               id="habit-frequency"
               name="frequency"
               value={values.frequency}
+              disabled={isSubmitting}
               onChange={(event) =>
                 updateField('frequency', event.target.value as HabitFormValues['frequency'])
               }
@@ -133,12 +150,17 @@ export function HabitForm({
           </div>
           <div className="form-actions__buttons">
             {onCancel ? (
-              <button type="button" className="secondary-action" onClick={onCancel}>
+              <button
+                type="button"
+                className="secondary-action"
+                onClick={onCancel}
+                disabled={isSubmitting}
+              >
                 취소
               </button>
             ) : null}
-            <button type="submit" className="submit-button">
-              습관 추가
+            <button type="submit" className="submit-button" disabled={isSubmitting}>
+              {isSubmitting ? '저장 중...' : '습관 추가'}
             </button>
           </div>
         </div>

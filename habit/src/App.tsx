@@ -20,6 +20,7 @@ function App() {
     categorySummary,
     streakLeader,
     consistencyLabel,
+    syncBanner,
     addHabit,
     toggleHabitCompletion,
     deleteHabit,
@@ -72,8 +73,8 @@ function App() {
     setComposerOpen(false)
   }
 
-  function handleCreateHabit(values: Parameters<typeof addHabit>[0]) {
-    addHabit(values)
+  async function handleCreateHabit(values: Parameters<typeof addHabit>[0]) {
+    await addHabit(values)
     setComposerOpen(false)
   }
 
@@ -96,6 +97,16 @@ function App() {
           <ThemeToggle theme={theme} onToggle={toggleTheme} />
         </div>
       </header>
+
+      {syncBanner ? (
+        <section
+          className={`sync-banner sync-banner--${syncBanner.tone}`}
+          role={syncBanner.tone === 'warning' ? 'alert' : 'status'}
+        >
+          <strong>{syncBanner.title}</strong>
+          <p>{syncBanner.message}</p>
+        </section>
+      ) : null}
 
       <main className="layout">
         <section className="overview-grid">

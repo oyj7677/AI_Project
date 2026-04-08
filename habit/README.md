@@ -1,91 +1,124 @@
 # Rhythm Habit Studio
 
-Rhythm Habit Studio is a local-first habit tracking web app built with React, Vite, and TypeScript. It helps you create habits, check in daily, track streaks, review recent history, and stay on top of progress from a single responsive dashboard.
+Rhythm Habit Studio is now a two-tier habit tracker made of:
 
-## Features
+- a React + Vite frontend in the project root
+- a Kotlin + Spring Boot backend in `backend/`
 
-- Create habits with a title, description, category, and frequency
-- Track `daily`, `weekdays`, and `weekly` habits
-- Check in for the current day or week
-- View current streaks, longest streaks, and recent completion totals
-- Review recent check-in history across all habits
-- See dashboard stats for habits scheduled today, on-track habits, and 7/30-day activity
-- Persist habits and theme preference in `localStorage`
-- Use a mobile-friendly layout with a built-in dark mode toggle
+The frontend keeps the existing dashboard experience, while the backend now owns habit persistence through a REST API backed by H2.
+
+## What Changed
+
+- Habits are loaded from `Spring Boot` instead of browser-only `localStorage`
+- Existing browser data is migrated once into the backend when the server is empty
+- Habit create / toggle / delete actions now call `/api/habits`
+- Vite proxies `/api` requests to `http://localhost:8080` in development
+- Theme preference still stays in `localStorage`
 
 ## Tech Stack
+
+### Frontend
 
 - React 19
 - TypeScript
 - Vite
-- Plain CSS with design tokens
-- Vitest for streak/stat logic tests
-- ESLint for linting
+- Plain CSS
+- Vitest
+
+### Backend
+
+- Kotlin
+- Spring Boot
+- Spring Web MVC
+- Spring Data JPA
+- H2 file database
+- Bean Validation
 
 ## Project Structure
 
 ```text
 habit/
-├── public/
-├── src/
-│   ├── components/
-│   ├── hooks/
-│   ├── lib/
-│   ├── types/
-│   ├── App.tsx
-│   ├── App.css
-│   ├── index.css
-│   └── main.tsx
-├── package.json
-└── README.md
+├─ backend/
+│  ├─ src/main/kotlin/com/oyj/habit/backend/
+│  ├─ src/main/resources/
+│  └─ build.gradle.kts
+├─ public/
+├─ src/
+│  ├─ components/
+│  ├─ hooks/
+│  ├─ lib/
+│  └─ types/
+├─ package.json
+└─ vite.config.ts
 ```
 
-## How To Run
+## Run The Project
 
-1. Open a terminal in the project folder:
+### 1. Start the backend
 
-   ```bash
-   cd /Users/oyj/Desktop/workspace/AI_Project/habit
-   ```
+Windows:
 
-2. Install dependencies:
+```powershell
+cd C:\Users\mediazen\Desktop\oyjProject\AI_Project\habit\backend
+.\gradlew.bat bootRun
+```
 
-   ```bash
-   npm install
-   ```
+macOS / Linux:
 
-3. Start the development server:
+```bash
+cd /path/to/habit/backend
+./gradlew bootRun
+```
 
-   ```bash
-   npm run dev
-   ```
+The backend starts on `http://localhost:8080`.
 
-4. Open the local URL shown in the terminal, usually:
+Useful endpoints:
 
-   ```text
-   http://127.0.0.1:5173/
-   ```
+- `GET /api/health`
+- `GET /api/habits`
+- `POST /api/habits`
+- `POST /api/habits/import`
+- `PUT /api/habits/{id}/completion`
+- `DELETE /api/habits/{id}`
+- `GET /h2-console`
 
-## Helpful Scripts
+### 2. Start the frontend
 
-- `npm run dev` starts the Vite dev server
-- `npm run build` creates a production build
-- `npm run test` runs the Vitest suite
-- `npm run lint` runs ESLint
+```bash
+cd /path/to/habit
+npm install
+npm run dev
+```
 
-## How It Works
+The frontend starts on `http://127.0.0.1:5173` and proxies API calls to the Spring server.
 
-- Habits are stored in the browser using `localStorage`
-- Daily and weekday habits check against the current local day
-- Weekly habits count one completion per week
-- Streak logic is calculated from saved completion history
-- The dashboard is derived from current habit state, not hard-coded counters
+## Backend Notes
 
-## Future Improvements
+- Habit data is stored in a local H2 file database under `backend/data/`
+- `weekly` habits allow one completion per week
+- `weekdays` habits reject weekend check-ins on the server
+- Local browser habits are imported automatically on the first successful sync if the backend has no data
 
-- Edit existing habits instead of deleting and recreating them
-- Add archived habits and recovery flows
-- Support notes per check-in
-- Add charts for longer-term monthly trends
-- Add export/import for backups or device migration
-- Add notifications or calendar integrations
+## Testing
+
+Frontend:
+
+```bash
+npm run test
+```
+
+Backend:
+
+Windows:
+
+```powershell
+cd C:\Users\mediazen\Desktop\oyjProject\AI_Project\habit\backend
+.\gradlew.bat test
+```
+
+macOS / Linux:
+
+```bash
+cd /path/to/habit/backend
+./gradlew test
+```
